@@ -562,24 +562,53 @@
         map.on("mouseleave", layerId, () => map.getCanvas().style.cursor = "");
       }
 
-      // Scroll observer
-      const sections = document.querySelectorAll("section[data-field]");
-      const observer = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          sections.forEach(s => s.classList.remove("active"));
-          entry.target.classList.add("active");
-          applyIntersectionStyle(entry.target.dataset.field, entry.target);
-        }
-      }, { threshold: 0.6 });
-      sections.forEach(s => observer.observe(s));
+      // Scroll + Click navigation for story sections
+const sections = document.querySelectorAll("section[data-field]");
+const storyEl = document.getElementById("story");
 
-      // Initialize
-      const first = document.querySelector("section[data-field]");
-      if (first) {
-        first.classList.add("active");
-        applyIntersectionStyle(first.dataset.field, first);
-      }
+// Lock to prevent IntersectionObserver from fighting with click-to-jump smooth scrolling
+let manualJumpUntil = 0;
+
+const observer = new IntersectionObserver((entries) => {
+  // If we just did a manual jump, ignore observer briefly
+  if (Date.now() < manualJumpUntil) return;
+
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+
+    sections.forEach(s => s.classList.remove("active"));
+    entry.target.classList.add("active");
+    applyIntersectionStyle(entry.target.dataset.field, entry.target);
+  }
+}, { threshold: 0.6 });
+
+sections.forEach(s => observer.observe(s));
+
+// Click-to-jump: click a section to scroll to it AND immediately apply the metric
+sections.forEach((sec) => {
+  sec.style.cursor = "pointer";
+
+  sec.addEventListener("click", (ev) => {
+    ev.preventDefault();
+
+    // Activate immediately
+    sections.forEach(s => s.classList.remove("active"));
+    sec.classList.add("active");
+    applyIntersectionStyle(sec.dataset.field, sec);
+
+    // Smooth scroll inside the story panel
+    manualJumpUntil = Date.now() + 600; // 0.6s lock
+    const top = sec.offsetTop - 12;
+    storyEl.scrollTo({ top, behavior: "smooth" });
+  });
+});
+
+// Initialize
+const first = document.querySelector("section[data-field]");
+if (first) {
+  first.classList.add("active");
+  applyIntersectionStyle(first.dataset.field, first);
+}
     };
 
     if (map.loaded()) addLayers();
