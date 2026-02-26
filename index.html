@@ -386,7 +386,93 @@
           "circle-stroke-color": "rgba(0,0,0,0.35)"
         }
       });
+// -------------------------
+// Click: intersection popup
+// -------------------------
+map.on("click", "intersection-layer", (e) => {
+  const f = e.features && e.features[0];
+  if (!f) return;
 
+  const p = f.properties || {};
+  const keys = [
+    "intersection_id","region_name","station_name","date","time_start","observer_id",
+    "count_motorbike","count_car","count_bus","count_truck","count_total",
+    "share_mc","share_car","share_bus","share_truck"
+  ];
+
+  let html = `<div style="font-size:12px;line-height:1.35">`;
+  for (const k of keys) {
+    if (p[k] === undefined || p[k] === null || String(p[k]).trim() === "") continue;
+
+    // Format shares back to %
+    if (String(k).startsWith("share_") && Number.isFinite(Number(p[k]))) {
+      html += `<div><b>${k}:</b> ${(Number(p[k]) * 100).toFixed(2)}%</div>`;
+    } else {
+      html += `<div><b>${k}:</b> ${p[k]}</div>`;
+    }
+  }
+  html += `</div>`;
+
+  new mapboxgl.Popup({ maxWidth: "380px" })
+    .setLngLat(f.geometry.coordinates)
+    .setHTML(html)
+    .addTo(map);
+});
+
+// -------------------------
+// Click: media popup + auto zoom
+// -------------------------
+map.on("click", "media-layer", (e) => {
+  const f = e.features && e.features[0];
+  if (!f) return;
+
+  const p = f.properties || {};
+  const url = p.URL || p.url || "";
+  const filename = p.Filename || p.filename || "";
+  const mediaType = String(p.MediaType || "").toLowerCase();
+
+  // Auto zoom + left padding (story panel)
+  const targetZoom = Math.max(map.getZoom(), 16);
+  map.easeTo({
+    center: f.geometry.coordinates,
+    zoom: targetZoom,
+    padding: { left: 360, top: 70, right: 70, bottom: 70 },
+    duration: 800,
+    essential: true
+  });
+
+  const isVideo = mediaType === "video" || /\.(mp4|mov|webm)$/i.test(url);
+
+  let mediaHtml = "";
+  if (isVideo) {
+    mediaHtml = `
+      <div class="popup-media">
+        <video controls playsinline preload="metadata" src="${url}"></video>
+      </div>`;
+  } else {
+    mediaHtml = `
+      <div class="popup-media">
+        <img src="${url}" alt="${filename}">
+      </div>`;
+  }
+
+  const infoHtml = `
+    <div style="margin-top:8px;font-size:12px;line-height:1.35">
+      ${filename ? `<div><b>Filename:</b> ${filename}</div>` : ""}
+      <div><a href="${url}" target="_blank" rel="noopener">Open file</a></div>
+    </div>`;
+
+  new mapboxgl.Popup({ maxWidth: "560px" })
+    .setLngLat(f.geometry.coordinates)
+    .setHTML(mediaHtml + infoHtml)
+    .addTo(map);
+});
+
+// Pointer cursor
+for (const layerId of ["intersection-layer", "media-layer"]) {
+  map.on("mouseenter", layerId, () => map.getCanvas().style.cursor = "pointer");
+  map.on("mouseleave", layerId, () => map.getCanvas().style.cursor = "");
+}
       // Controls
       document.getElementById("palette").addEventListener("change", () => {
         const active = document.querySelector("section.active") || document.querySelector("section[data-field]");
