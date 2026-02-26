@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Traffic Map</title>
+
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+html,body{height:100%;margin:0}
+#map{position:absolute;top:0;bottom:0;width:100%}
+.panel{
+position:absolute;top:12px;left:12px;width:360px;
+background:white;border-radius:12px;
+box-shadow:0 10px 30px rgba(0,0,0,.15);
+padding:12px;font-family:system-ui;font-size:13px}
+.legend{height:10px;border-radius:999px;
+background:linear-gradient(90deg,#2c7bb6,#abd9e9,#ffffbf,#fdae61,#d7191c)}
+.popup-media img,.popup-media video{
+width:100%;border-radius:8px}
+</style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<div class="panel">
+<b>Intersections & Media</b><br>
+<label><input type="checkbox" id="toggleIntersections" checked> Intersections</label>
+<label><input type="checkbox" id="toggleMedia" checked> Media</label>
+
+<div style="margin-top:8px">
+Style intersections by:
+<select id="attrSelect"></select>
+<div class="legend"></div>
+</div>
+
+<div id="status" style="margin-top:8px;color:#444"></div>
+</div>
+
+<script>
+
+// ================= CONFIG =================
+mapboxgl.accessToken =
+"pk.eyJ1IjoiZGVmZmllIiwiYSI6ImNtbTNqMmMxODAxaDAycXMyN255eWFwaGIifQ.X5T0rb3Cm_p1wZEYIAGfYQ";
+
+const R2_BASE =
+"https://pub-5b55ba14d9c048b3988cab9249645020.r2.dev";
+
+const INTERSECTION_CSV="intersection.csv";
+const MEDIA_CSV="media_locations.csv";
+// ==========================================
+
+const map=new mapboxgl.Map({
+container:"map",
+style:"mapbox://styles/mapbox/light-v11",
+center:[106.6868,10.7815],
+zoom:13
+});
+
+map.addControl(new mapboxgl.NavigationControl());
+
+function csvUrl(name){
+return R2_BASE.replace(/\/$/,"")+"/"+name;
+}
+
+function parseNumber(x){
+const v=Number(x);
+return Number.isFinite(v)?v:null;
+}
+
+function toGeo(rows,lonKey,latKey){
+const f=[];
+rows.forEach(r=>{
+const lon=parseNumber(r[lonKey]);
+const lat=parseNumber(r[latKey]);
+if(lon!=null&&lat!=null){
+f.push({
+type:"Feature",
+geometry:{type:"Point",coordinates:[lon,lat]},
+properties:r
+});
+}});
+return {type:"FeatureCollection",features:f};
+}
+
+async function fetchCSV(url){
+return new Promise((res,rej)=>{
+Papa.parse(url,{
+download:true,header:true,
+complete:r=>res(r.data),
+error:e=>rej(e)
+});
+});
+}
+
+async function init(){
+
+document.getElementById("status").innerText="Loading CSV...";
+
+let interRows,mediaRows;
+try{
+[interRows,mediaRows]=await Promise.all([
+fetchCSV(csvUrl(INTERSECTION_CSV)),
+fetchCSV(csvUrl(MEDIA_CSV))
+]);
+}catch(e){
+document.getElementById("status").innerText=
+"CSV load failed (CORS or filename issue)";
+return;
+}
+
+const intersectionGeo=toGeo(interRows,"lon","lat");
+const mediaGeo=toGeo(mediaRows,"Longitude","Latitude");
+
+document.getElementById("status").innerText=
+"Loaded: intersections="+intersectionGeo.features.length+
+", media="+mediaGeo.features.length;
+
+// ========= Add layers safely =========
+function addLayers(){
+
+map.addSource("intersections",{type:"geojson",data:intersectionGeo});
+map.addLayer({
+id:"intersection-layer",
+type:"circle",
+source:"intersections",
+paint:{
+"circle-color":"#2c7bb6",
+"circle-radius":7,
+"circle-stroke-width":1,
+"circle-stroke-color":"#333"
+}
+});
+
+map.addSource("media",{type:"geojson",data:mediaGeo});
+map.addLayer({
+id:"media-layer",
+type:"circle",
+source:"media",
+paint:{
+"circle-color":"#7c3aed",
+"circle-radius":6,
+"circle-stroke-width":1,
+"circle-stroke-color":"#333"
+}
+});
+
+// ===== dropdown numeric fields =====
+const numericCols=Object.keys(interRows[0])
+.filter(k=>interRows.some(r=>!isNaN(parseFloat(r[k]))));
+
+const select=document.getElementById("attrSelect");
+numericCols.forEach(c=>{
+const opt=document.createElement("option");
+opt.value=c;opt.textContent=c;
+select.appendChild(opt);
+});
+
+if(numericCols.includes("count_total"))
+select.value="count_total";
+
+select.addEventListener("change",()=>{
+const attr=select.value;
+map.setPaintProperty("intersection-layer",
+"circle-color",
+["interpolate",["linear"],
+["to-number",["get",attr]],
+0,"#2c7bb6",
+100,"#d7191c"]);
+});
+
+// ===== popups =====
+map.on("click","intersection-layer",e=>{
+const p=e.features[0].properties;
+let html="";
+Object.keys(p).forEach(k=>{
+html+=`<b>${k}</b>: ${p[k]}<br>`;
+});
+new mapboxgl.Popup()
+.setLngLat(e.lngLat)
+.setHTML(html)
+.addTo(map);
+});
+
+map.on("click","media-layer",e=>{
+const p=e.features[0].properties;
+const url=p.URL||p.url||"";
+let html="";
+if(url.match(/\.(mp4|mov|webm)$/i)){
+html=`<div class="popup-media">
+<video controls src="${url}"></video></div>`;
+}else{
+html=`<div class="popup-media">
+<img src="${url}"></div>`;
+}
+new mapboxgl.Popup()
+.setLngLat(e.lngLat)
+.setHTML(html)
+.addTo(map);
+});
+
+// ===== toggles =====
+document.getElementById("toggleIntersections")
+.addEventListener("change",e=>{
+map.setLayoutProperty("intersection-layer",
+"visibility",e.target.checked?"visible":"none");
+});
+
+document.getElementById("toggleMedia")
+.addEventListener("change",e=>{
+map.setLayoutProperty("media-layer",
+"visibility",e.target.checked?"visible":"none");
+});
+
+}
+
+// Ensure map is ready
+if(map.loaded()) addLayers();
+else map.on("load",addLayers);
+
+}
+
+init();
+
+</script>
+</body>
+</html>
