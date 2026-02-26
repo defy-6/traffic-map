@@ -12,22 +12,8 @@
   <style>
     html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
     .container { display: flex; height: 100%; }
-
-    #story {
-      width: 32%;
-      min-width: 320px;
-      max-width: 520px;
-      overflow-y: auto;
-      padding: 22px 22px 60px 22px;
-      background: #f7f7f7;
-      border-right: 1px solid #ddd;
-    }
-
-    /* Make #map a positioning context for overlays */
-    #map {
-      flex: 1;
-      position: relative;
-    }
+    #story { width: 32%; min-width: 320px; max-width: 520px; overflow-y: auto; padding: 22px 22px 60px 22px; background: #f7f7f7; border-right: 1px solid #ddd; }
+    #map { flex: 1; position: relative; }
 
     h1 { margin: 0 0 6px 0; font-size: 20px; }
     .sub { margin: 0 0 18px 0; color: #555; font-size: 13px; line-height: 1.4; }
@@ -36,44 +22,15 @@
     .control:first-of-type { border-top: none; padding-top: 0; }
     .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     label { user-select: none; }
-
-    select {
-      width: 100%;
-      padding: 7px 10px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      background: white;
-      font-size: 13px;
-    }
-
+    select { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 10px; background: white; font-size: 13px; }
     input[type="range"] { width: 100%; }
-
-    button {
-      padding: 7px 10px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-      background: white;
-      cursor: pointer;
-      font-size: 13px;
-    }
+    button { padding: 7px 10px; border-radius: 10px; border: 1px solid #ddd; background: white; cursor: pointer; font-size: 13px; }
     button:hover { background: #f1f1f1; }
 
-    .legend {
-      height: 14px;
-      border-radius: 999px;
-      margin-top: 8px;
-      border: 1px solid #ddd;
-    }
+    .legend { height: 14px; border-radius: 999px; margin-top: 8px; border: 1px solid #ddd; }
     .legendLabel { margin-top: 6px; font-size: 12px; color: #444; }
 
-    section {
-      margin-top: 54px;
-      padding: 14px 14px;
-      background: white;
-      border: 1px solid #e6e6e6;
-      border-radius: 14px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.05);
-    }
+    section { margin-top: 54px; padding: 14px 14px; background: white; border: 1px solid #e6e6e6; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); }
     section.active { border-color: #b7c6ff; box-shadow: 0 8px 24px rgba(60,90,255,0.12); }
     section h2 { margin: 0 0 6px 0; font-size: 15px; }
     section p { margin: 0; color: #555; font-size: 13px; line-height: 1.4; }
@@ -82,60 +39,19 @@
     .status.error { color: #b91c1c; }
     .status.ok { color: #166534; }
 
-    /* Bigger media in popup */
     .mapboxgl-popup-content { max-width: 560px; }
-    .popup-media img, .popup-media video {
-      width: 100%;
-      border-radius: 10px;
-      display: block;
-      background: #000;
-    }
+    .popup-media img, .popup-media video { width: 100%; border-radius: 10px; display: block; background: #000; }
     .popup-media img { max-height: 420px; object-fit: cover; }
     .popup-media video { max-height: 420px; }
 
-    /* Map overlays (title + legend) */
-    .map-overlay {
-      position: absolute;
-      z-index: 2;
-      background: rgba(255,255,255,0.92);
-      border: 1px solid rgba(0,0,0,0.15);
-      border-radius: 12px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.10);
-      backdrop-filter: blur(6px);
-      padding: 10px 12px;
-      max-width: 360px;
-      pointer-events: none;
-    }
+    .map-overlay { position: absolute; z-index: 2; background: rgba(255,255,255,0.92); border: 1px solid rgba(0,0,0,0.15); border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,0.10); backdrop-filter: blur(6px); padding: 10px 12px; max-width: 360px; pointer-events: none; }
     #mapTitleOverlay { top: 12px; left: 12px; }
     #mapLegendOverlay { top: 12px; right: 12px; width: 260px; }
-
-    .mapTitle {
-      font-size: 13px;
-      font-weight: 700;
-      margin: 0 0 2px 0;
-    }
-    .mapSubtitle {
-      font-size: 12px;
-      color: #444;
-      margin: 0;
-      line-height: 1.3;
-    }
-
-    .mapLegendTitle {
-      font-size: 12px;
-      font-weight: 700;
-      margin: 0 0 6px 0;
-    }
-    #mapLegendBar {
-      height: 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(0,0,0,0.15);
-    }
-    #mapLegendLabel {
-      font-size: 12px;
-      color: #333;
-      margin-top: 6px;
-    }
+    .mapTitle { font-size: 13px; font-weight: 700; margin: 0 0 2px 0; }
+    .mapSubtitle { font-size: 12px; color: #444; margin: 0; line-height: 1.3; }
+    .mapLegendTitle { font-size: 12px; font-weight: 700; margin: 0 0 6px 0; }
+    #mapLegendBar { height: 12px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.15); }
+    #mapLegendLabel { font-size: 12px; color: #333; margin-top: 6px; }
   </style>
 </head>
 
@@ -143,10 +59,7 @@
 <div class="container">
   <div id="story">
     <h1>Traffic Analysis StoryMap</h1>
-    <p class="sub">
-      Scroll to switch the intersection metric. Media points stay available as field evidence.
-      Use controls to adjust palette, sizes, visibility, and layer order.
-    </p>
+    <p class="sub">Scroll to switch the intersection metric. Media points stay available as field evidence.</p>
 
     <div class="control">
       <div><b>Color Palette</b></div>
@@ -184,60 +97,23 @@
 
     <div id="status" class="status">Loading…</div>
 
-    <!-- STORY SECTIONS (count_pedestrian removed) -->
-    <section data-field="count_total">
-      <h2>Overall Traffic Volume</h2>
-      <p>Total traffic intensity across intersections.</p>
-    </section>
+    <section data-field="count_total"><h2>Overall Traffic Volume</h2><p>Total traffic intensity across intersections.</p></section>
+    <section data-field="count_motorbike"><h2>Motorbike Count</h2><p>Absolute motorbike flow distribution.</p></section>
+    <section data-field="count_car"><h2>Car Count</h2><p>Absolute car traffic distribution.</p></section>
+    <section data-field="count_bus"><h2>Bus Count</h2><p>Bus traffic concentration across nodes.</p></section>
+    <section data-field="count_truck"><h2>Truck Count</h2><p>Freight movement pattern in the network.</p></section>
 
-    <section data-field="count_motorbike">
-      <h2>Motorbike Count</h2>
-      <p>Absolute motorbike flow distribution.</p>
-    </section>
-
-    <section data-field="count_car">
-      <h2>Car Count</h2>
-      <p>Absolute car traffic distribution.</p>
-    </section>
-
-    <section data-field="count_bus">
-      <h2>Bus Count</h2>
-      <p>Bus traffic concentration across nodes.</p>
-    </section>
-
-    <section data-field="count_truck">
-      <h2>Truck Count</h2>
-      <p>Freight movement pattern in the network.</p>
-    </section>
-
-    <section data-field="share_mc" data-type="share">
-      <h2>Motorbike Share</h2>
-      <p>Proportion of motorbike traffic relative to total traffic.</p>
-    </section>
-
-    <section data-field="share_car" data-type="share">
-      <h2>Car Share</h2>
-      <p>Proportion of car traffic relative to total traffic.</p>
-    </section>
-
-    <section data-field="share_bus" data-type="share">
-      <h2>Bus Share</h2>
-      <p>Proportion of bus traffic relative to total traffic.</p>
-    </section>
-
-    <section data-field="share_truck" data-type="share">
-      <h2>Truck Share</h2>
-      <p>Proportion of truck traffic relative to total traffic.</p>
-    </section>
+    <section data-field="share_mc" data-type="share"><h2>Motorbike Share</h2><p>Proportion of motorbike traffic relative to total traffic.</p></section>
+    <section data-field="share_car" data-type="share"><h2>Car Share</h2><p>Proportion of car traffic relative to total traffic.</p></section>
+    <section data-field="share_bus" data-type="share"><h2>Bus Share</h2><p>Proportion of bus traffic relative to total traffic.</p></section>
+    <section data-field="share_truck" data-type="share"><h2>Truck Share</h2><p>Proportion of truck traffic relative to total traffic.</p></section>
   </div>
 
   <div id="map">
-    <!-- Map overlays -->
     <div id="mapTitleOverlay" class="map-overlay">
       <div id="mapTitle" class="mapTitle">—</div>
       <p id="mapSubtitle" class="mapSubtitle">—</p>
     </div>
-
     <div id="mapLegendOverlay" class="map-overlay">
       <div id="mapLegendTitle" class="mapLegendTitle">Legend</div>
       <div id="mapLegendBar"></div>
@@ -247,18 +123,12 @@
 </div>
 
 <script>
-  // =========================
-  // CONFIG
-  // =========================
   mapboxgl.accessToken = "pk.eyJ1IjoiZGVmZmllIiwiYSI6ImNtbTNqMmMxODAxaDAycXMyN255eWFwaGIifQ.X5T0rb3Cm_p1wZEYIAGfYQ";
 
   const R2_BASE = "https://pub-5b55ba14d9c048b3988cab9249645020.r2.dev";
   const INTERSECTION_CSV = "intersection.csv";
   const MEDIA_CSV = "media_locations.csv";
 
-  // =========================
-  // MAP INIT
-  // =========================
   const map = new mapboxgl.Map({
     container: "map",
     style: "mapbox://styles/mapbox/light-v11",
@@ -267,9 +137,6 @@
   });
   map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
 
-  // =========================
-  // HELPERS
-  // =========================
   const statusEl = document.getElementById("status");
   function setStatus(msg, kind="") {
     statusEl.className = "status" + (kind ? " " + kind : "");
@@ -280,34 +147,64 @@
     return `${R2_BASE.replace(/\/$/, "")}/${name}`;
   }
 
-  // Parse numeric strings, including "82.14%" -> 0.8214
   function parseNumber(x) {
     const s = String(x ?? "").trim();
     if (!s) return null;
-
-    // Percent
     if (s.endsWith("%")) {
       const v = Number(s.slice(0, -1));
       return Number.isFinite(v) ? v / 100 : null;
     }
-
-    // Remove commas
     const v = Number(s.replaceAll(",", ""));
     return Number.isFinite(v) ? v : null;
+  }
+
+  function findCoordKeys(rows, preferLon, preferLat) {
+    if (!rows || !rows.length) return null;
+    const keys = Object.keys(rows[0] || {});
+    const norm = k => k.toLowerCase().replaceAll(" ", "").replaceAll("_", "");
+    const nkeys = keys.map(k => [k, norm(k)]);
+
+    const lonCandidates = new Set([preferLon, "lon","lng","longitude","long","x","经度","經度"]);
+    const latCandidates = new Set([preferLat, "lat","latitude","y","纬度","緯度"]);
+
+    let lonKey = null, latKey = null;
+
+    for (const [orig, nk] of nkeys) {
+      if (!lonKey && [...lonCandidates].some(c => c && nk === norm(c))) lonKey = orig;
+      if (!latKey && [...latCandidates].some(c => c && nk === norm(c))) latKey = orig;
+    }
+
+    // Loose contains match fallback
+    if (!lonKey) {
+      lonKey = (nkeys.find(([o,nk]) => nk.includes("lon") || nk.includes("lng") || nk.includes("longitude") || nk.includes("经度") || nk.includes("經度")) || [null])[0];
+    }
+    if (!latKey) {
+      latKey = (nkeys.find(([o,nk]) => nk.includes("lat") || nk.includes("latitude") || nk.includes("纬度") || nk.includes("緯度")) || [null])[0];
+    }
+
+    if (!lonKey || !latKey) return null;
+    return { lonKey, latKey };
   }
 
   function toGeo(rows, lonKey, latKey) {
     const features = [];
     for (const r of rows) {
-      const lon = parseNumber(r[lonKey]);
-      const lat = parseNumber(r[latKey]);
+      let lon = parseNumber(r[lonKey]);
+      let lat = parseNumber(r[latKey]);
       if (lon === null || lat === null) continue;
 
-      // Copy props and convert numeric-like values (including %)
+      // Auto-fix swapped coords (lat>90 but lon within [-90,90] is a common sign)
+      if (Math.abs(lat) > 90 && Math.abs(lon) <= 90) {
+        const tmp = lon; lon = lat; lat = tmp;
+      }
+
+      // Filter obviously invalid coords
+      if (Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
+
       const props = { ...r };
       for (const k of Object.keys(props)) {
         const n = parseNumber(props[k]);
-        if (n !== null) props[k] = n;
+        if (n !== null) props[k] = n; // includes % -> 0-1
       }
 
       features.push({
@@ -324,24 +221,20 @@
     if(name==="green") return ["#f7fcf5","#c7e9c0","#74c476","#238b45","#00441b"];
     if(name==="purple")return ["#fcfbfd","#dadaeb","#9e9ac8","#6a51a3","#3f007d"];
     if(name==="gray")  return ["#f7f7f7","#cccccc","#969696","#636363","#252525"];
-    return ["#f7fbff","#c6dbef","#6baed6","#2171b5","#08306b"]; // blue
+    return ["#f7fbff","#c6dbef","#6baed6","#2171b5","#08306b"];
   }
 
   function updateLegend(min, max, colors, isShare, fieldLabel) {
-    // Story panel legend
-    document.getElementById("legend").style.background =
-      `linear-gradient(to right, ${colors.join(",")})`;
+    const label = isShare
+      ? `${(min*100).toFixed(0)}% → ${(max*100).toFixed(0)}%`
+      : `${min.toFixed(0)} → ${max.toFixed(0)}`;
 
-    const storyLabel = isShare
-      ? `${(min*100).toFixed(1)}% → ${(max*100).toFixed(1)}%`
-      : `${min.toFixed(1)} → ${max.toFixed(1)}`;
-    document.getElementById("legendLabel").textContent = storyLabel;
+    document.getElementById("legend").style.background = `linear-gradient(to right, ${colors.join(",")})`;
+    document.getElementById("legendLabel").textContent = label;
 
-    // Map overlay legend (always visible)
     document.getElementById("mapLegendTitle").textContent = fieldLabel || "Legend";
-    document.getElementById("mapLegendBar").style.background =
-      `linear-gradient(to right, ${colors.join(",")})`;
-    document.getElementById("mapLegendLabel").textContent = storyLabel;
+    document.getElementById("mapLegendBar").style.background = `linear-gradient(to right, ${colors.join(",")})`;
+    document.getElementById("mapLegendLabel").textContent = label;
   }
 
   function setMapTitle(title, subtitle) {
@@ -349,21 +242,11 @@
     document.getElementById("mapSubtitle").textContent = subtitle || "—";
   }
 
-  function escapeHtml(s) {
-    return String(s ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
   async function fetchCsv(url) {
     return new Promise((resolve, reject) => {
       Papa.parse(url, {
         download: true,
         header: true,
-        dynamicTyping: false,
         skipEmptyLines: true,
         complete: res => resolve(res.data),
         error: err => reject(err)
@@ -371,29 +254,16 @@
     });
   }
 
-  // =========================
-  // MAIN
-  // =========================
   let intersectionGeo = null;
   let mediaGeo = null;
-
-  function setLayerVisibility(layerId, visible) {
-    if (!map.getLayer(layerId)) return;
-    map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
-  }
-
-  function setCircleRadius(layerId, r) {
-    if (!map.getLayer(layerId)) return;
-    map.setPaintProperty(layerId, "circle-radius", r);
-  }
 
   function computeMinMax(geo, field) {
     let min = Infinity, max = -Infinity;
     for (const f of geo.features) {
       const v = Number(f.properties?.[field]);
       if (!Number.isFinite(v)) continue;
-      if (v < min) min = v;
-      if (v > max) max = v;
+      min = Math.min(min, v);
+      max = Math.max(max, v);
     }
     if (!Number.isFinite(min) || !Number.isFinite(max)) return [0, 1];
     if (min === max) return [min, min + 1e-9];
@@ -405,18 +275,13 @@
 
     const colors = paletteColors(document.getElementById("palette").value);
     const isShare = field.startsWith("share_");
-
-    // Shares are now numeric in [0,1] (after parsing %), so fix legend scale to [0,1]
-    const minMax = isShare ? [0, 1] : computeMinMax(intersectionGeo, field);
-    const min = minMax[0], max = minMax[1];
+    const [min, max] = isShare ? [0, 1] : computeMinMax(intersectionGeo, field);
 
     const title = sectionEl?.querySelector("h2")?.textContent || "Traffic Metric";
     const subtitle = sectionEl?.querySelector("p")?.textContent || "";
     setMapTitle(title, subtitle);
 
-    // Use field name as legend title (plus section title)
-    const fieldLabel = `${title} (${field})`;
-    updateLegend(min, max, colors, isShare, fieldLabel);
+    updateLegend(min, max, colors, isShare, `${title} (${field})`);
 
     map.setPaintProperty("intersection-layer", "circle-color", [
       "interpolate", ["linear"],
@@ -429,6 +294,14 @@
     ]);
   }
 
+  function setLayerVisibility(layerId, visible) {
+    if (!map.getLayer(layerId)) return;
+    map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
+  }
+  function setCircleRadius(layerId, r) {
+    if (!map.getLayer(layerId)) return;
+    map.setPaintProperty(layerId, "circle-radius", r);
+  }
   function bringFront(id) {
     if (!map.getLayer(id)) return;
     map.moveLayer(id);
@@ -437,31 +310,46 @@
   async function init() {
     setStatus("Loading CSV…");
 
+    let intersectionRows, mediaRows;
     try {
-      const [intersectionRows, mediaRows] = await Promise.all([
+      [intersectionRows, mediaRows] = await Promise.all([
         fetchCsv(csvUrl(INTERSECTION_CSV)),
         fetchCsv(csvUrl(MEDIA_CSV))
       ]);
-
-      intersectionGeo = toGeo(intersectionRows, "lon", "lat");
-      mediaGeo = toGeo(mediaRows, "Longitude", "Latitude");
-
-      setStatus(
-        `Loaded: intersections=${intersectionGeo.features.length}, media=${mediaGeo.features.length}`,
-        "ok"
-      );
     } catch (e) {
       console.error(e);
-      setStatus("Failed to load CSV (CORS / file name / public access). Check DevTools Network.", "error");
+      setStatus("Failed to load CSV (CORS / file name / public access).", "error");
       return;
     }
 
+    // Auto-detect coordinate keys
+    const iKeys = findCoordKeys(intersectionRows, "lon", "lat");
+    const mKeys = findCoordKeys(mediaRows, "Longitude", "Latitude");
+
+    if (!iKeys) {
+      setStatus("Intersection CSV: cannot find lon/lat columns.", "error");
+      return;
+    }
+    if (!mKeys) {
+      setStatus("Media CSV: cannot find Longitude/Latitude columns.", "error");
+      return;
+    }
+
+    intersectionGeo = toGeo(intersectionRows, iKeys.lonKey, iKeys.latKey);
+    mediaGeo = toGeo(mediaRows, mKeys.lonKey, mKeys.latKey);
+
+    setStatus(
+      `Loaded rows: intersections=${intersectionRows.length}, media=${mediaRows.length} | points: intersections=${intersectionGeo.features.length}, media=${mediaGeo.features.length}`,
+      "ok"
+    );
+
     const addLayers = () => {
-      // Fit to data bounds
+      // Fit bounds to points
       const allCoords = [
         ...intersectionGeo.features.map(f => f.geometry.coordinates),
         ...mediaGeo.features.map(f => f.geometry.coordinates)
       ];
+
       if (allCoords.length) {
         const bounds = allCoords.reduce(
           (b, c) => b.extend(c),
@@ -470,11 +358,9 @@
         map.fitBounds(bounds, { padding: { left: 360, top: 60, right: 60, bottom: 60 }, duration: 800 });
       }
 
-      // Sources
       map.addSource("intersections", { type: "geojson", data: intersectionGeo });
       map.addSource("media", { type: "geojson", data: mediaGeo });
 
-      // Layers
       map.addLayer({
         id: "intersection-layer",
         type: "circle",
@@ -501,13 +387,12 @@
         }
       });
 
-      // Controls: palette
+      // Controls
       document.getElementById("palette").addEventListener("change", () => {
         const active = document.querySelector("section.active") || document.querySelector("section[data-field]");
         if (active) applyIntersectionStyle(active.dataset.field, active);
       });
 
-      // Controls: sizes
       document.getElementById("sizeIntersection").addEventListener("input", (e) => {
         setCircleRadius("intersection-layer", Number(e.target.value));
       });
@@ -516,100 +401,14 @@
         setCircleRadius("media-layer", Number(e.target.value));
       });
 
-      // Controls: media visibility
       document.getElementById("toggleMedia").addEventListener("change", (e) => {
         setLayerVisibility("media-layer", e.target.checked);
       });
 
-      // Controls: layer order
       document.getElementById("btnFrontIntersections").addEventListener("click", () => bringFront("intersection-layer"));
       document.getElementById("btnFrontMedia").addEventListener("click", () => bringFront("media-layer"));
 
-      // Click: intersection popup (count_pedestrian removed)
-      map.on("click", "intersection-layer", (e) => {
-        const f = e.features && e.features[0];
-        if (!f) return;
-
-        const p = f.properties || {};
-        const keys = [
-          "intersection_id","region_name","station_name","date","time_start","observer_id",
-          "count_motorbike","count_car","count_bus","count_truck","count_total",
-          "share_mc","share_car","share_bus","share_truck"
-        ];
-
-        let html = `<div style="font-size:12px;line-height:1.35">`;
-        for (const k of keys) {
-          if (p[k] === undefined || p[k] === null || String(p[k]).trim() === "") continue;
-
-          // Format share values back to %
-          if (String(k).startsWith("share_") && Number.isFinite(Number(p[k]))) {
-            html += `<div><b>${escapeHtml(k)}:</b> ${(Number(p[k]) * 100).toFixed(2)}%</div>`;
-          } else {
-            html += `<div><b>${escapeHtml(k)}:</b> ${escapeHtml(p[k])}</div>`;
-          }
-        }
-        html += `</div>`;
-
-        new mapboxgl.Popup({ maxWidth: "380px" })
-          .setLngLat(f.geometry.coordinates)
-          .setHTML(html)
-          .addTo(map);
-      });
-
-      // Click: media popup + auto zoom + bigger media
-      map.on("click", "media-layer", (e) => {
-        const f = e.features && e.features[0];
-        if (!f) return;
-
-        const p = f.properties || {};
-        const url = p.URL || p.url || "";
-        const filename = p.Filename || p.filename || "";
-        const mediaType = String(p.MediaType || "").toLowerCase();
-
-        // Auto zoom (offset for story panel)
-        const targetZoom = Math.max(map.getZoom(), 16);
-        map.easeTo({
-          center: f.geometry.coordinates,
-          zoom: targetZoom,
-          padding: { left: 360, top: 70, right: 70, bottom: 70 },
-          duration: 800,
-          essential: true
-        });
-
-        const isVideo = mediaType === "video" || /\.(mp4|mov|webm)$/i.test(url);
-
-        let mediaHtml = "";
-        if (isVideo) {
-          mediaHtml = `
-            <div class="popup-media">
-              <video controls playsinline preload="metadata" src="${escapeHtml(url)}"></video>
-            </div>`;
-        } else {
-          mediaHtml = `
-            <div class="popup-media">
-              <img src="${escapeHtml(url)}" alt="${escapeHtml(filename)}">
-            </div>`;
-        }
-
-        const infoHtml = `
-          <div style="margin-top:8px;font-size:12px;line-height:1.35">
-            ${filename ? `<div><b>Filename:</b> ${escapeHtml(filename)}</div>` : ""}
-            <div><a href="${escapeHtml(url)}" target="_blank" rel="noopener">Open file</a></div>
-          </div>`;
-
-        new mapboxgl.Popup({ maxWidth: "560px" })
-          .setLngLat(f.geometry.coordinates)
-          .setHTML(mediaHtml + infoHtml)
-          .addTo(map);
-      });
-
-      // Pointer cursor
-      for (const layerId of ["intersection-layer", "media-layer"]) {
-        map.on("mouseenter", layerId, () => map.getCanvas().style.cursor = "pointer");
-        map.on("mouseleave", layerId, () => map.getCanvas().style.cursor = "");
-      }
-
-      // Scroll-driven: switch field when a section becomes active
+      // Scroll observer
       const sections = document.querySelectorAll("section[data-field]");
       const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
@@ -619,10 +418,9 @@
           applyIntersectionStyle(entry.target.dataset.field, entry.target);
         }
       }, { threshold: 0.6 });
-
       sections.forEach(s => observer.observe(s));
 
-      // Initialize with the first section (and ensure map overlay legend shows immediately)
+      // Initialize
       const first = document.querySelector("section[data-field]");
       if (first) {
         first.classList.add("active");
@@ -630,7 +428,6 @@
       }
     };
 
-    // Handle map load race condition
     if (map.loaded()) addLayers();
     else map.on("load", addLayers);
   }
