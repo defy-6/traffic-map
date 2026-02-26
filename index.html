@@ -1,290 +1,552 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Traffic Analysis StoryMap</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Traffic Analysis StoryMap</title>
 
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.css" rel="stylesheet"/>
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.css" rel="stylesheet"/>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.0/mapbox-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
-<style>
-html,body{margin:0;height:100%;font-family:system-ui}
-.container{display:flex;height:100%}
-#story{
-width:32%;
-overflow-y:auto;
-padding:24px;
-background:#f7f7f7;
-border-right:1px solid #ddd;
-}
-#map{flex:1}
-section{margin-bottom:80px}
-h1{margin-top:0}
-h2{margin-top:50px}
-.control{margin-top:20px}
-.legend{height:14px;border-radius:8px;margin-top:6px}
-.slider{width:100%}
-button{margin-top:6px}
-</style>
+  <style>
+    html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+    .container { display: flex; height: 100%; }
+    #story {
+      width: 32%;
+      min-width: 320px;
+      max-width: 520px;
+      overflow-y: auto;
+      padding: 22px 22px 60px 22px;
+      background: #f7f7f7;
+      border-right: 1px solid #ddd;
+    }
+    #map { flex: 1; }
+
+    h1 { margin: 0 0 6px 0; font-size: 20px; }
+    .sub { margin: 0 0 18px 0; color: #555; font-size: 13px; line-height: 1.4; }
+
+    .control { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e6e6e6; }
+    .control:first-of-type { border-top: none; padding-top: 0; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    label { user-select: none; }
+    select {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: white;
+      font-size: 13px;
+    }
+    input[type="range"] { width: 100%; }
+    button {
+      padding: 7px 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      background: white;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    button:hover { background: #f1f1f1; }
+
+    .legend {
+      height: 14px;
+      border-radius: 999px;
+      margin-top: 8px;
+      border: 1px solid #ddd;
+    }
+    .legendLabel { margin-top: 6px; font-size: 12px; color: #444; }
+
+    section {
+      margin-top: 54px;
+      padding: 14px 14px;
+      background: white;
+      border: 1px solid #e6e6e6;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    }
+    section.active { border-color: #b7c6ff; box-shadow: 0 8px 24px rgba(60,90,255,0.12); }
+    section h2 { margin: 0 0 6px 0; font-size: 15px; }
+    section p { margin: 0; color: #555; font-size: 13px; line-height: 1.4; }
+
+    .status { margin-top: 10px; font-size: 12px; color: #444; }
+    .status.error { color: #b91c1c; }
+    .status.ok { color: #166534; }
+
+    /* Bigger media in popup */
+    .mapboxgl-popup-content { max-width: 520px; }
+    .popup-media img, .popup-media video {
+      width: 100%;
+      border-radius: 10px;
+      display: block;
+      background: #000;
+    }
+    .popup-media img { max-height: 420px; object-fit: cover; }
+    .popup-media video { max-height: 420px; }
+  </style>
 </head>
 
 <body>
-
 <div class="container">
+  <div id="story">
+    <h1>Traffic Analysis StoryMap</h1>
+    <p class="sub">
+      Scroll to switch the intersection metric. Media points stay available as field evidence.
+      Use controls to adjust palette, sizes, visibility, and layer order.
+    </p>
 
-<div id="story">
+    <div class="control">
+      <div><b>Color Palette</b></div>
+      <select id="palette">
+        <option value="blue">Blue (sequential)</option>
+        <option value="red">Red (sequential)</option>
+        <option value="green">Green (sequential)</option>
+        <option value="purple">Purple (sequential)</option>
+        <option value="gray">Gray (sequential)</option>
+      </select>
+      <div id="legend" class="legend"></div>
+      <div id="legendLabel" class="legendLabel">—</div>
+    </div>
 
-<h1>Traffic Pattern Analysis</h1>
-<p>This scroll-driven map explores traffic intensity and modal structure across observed intersections.</p>
+    <div class="control">
+      <div><b>Intersection Size</b></div>
+      <input type="range" min="3" max="26" value="8" id="sizeIntersection"/>
+    </div>
 
-<div class="control">
-<b>Color Palette</b>
-<select id="palette">
-<option value="blue">Blue</option>
-<option value="red">Red</option>
-<option value="green">Green</option>
-<option value="purple">Purple</option>
-</select>
-<div id="legend" class="legend"></div>
-<div id="legendLabel"></div>
-</div>
+    <div class="control">
+      <div class="row">
+        <label><input type="checkbox" id="toggleMedia" checked> Show Media Points</label>
+      </div>
+      <div style="margin-top:10px"><b>Media Size</b></div>
+      <input type="range" min="2" max="24" value="7" id="sizeMedia"/>
+    </div>
 
-<div class="control">
-<b>Intersection Size</b>
-<input type="range" min="3" max="25" value="8" id="sizeIntersection" class="slider">
-</div>
+    <div class="control">
+      <div><b>Layer Order</b></div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" id="btnFrontIntersections">Intersections Front</button>
+        <button type="button" id="btnFrontMedia">Media Front</button>
+      </div>
+    </div>
 
-<div class="control">
-<label>
-<input type="checkbox" id="toggleMedia" checked>
-Show Media Points
-</label>
-</div>
+    <div id="status" class="status">Loading…</div>
 
-<div class="control">
-<b>Media Size</b>
-<input type="range" min="2" max="20" value="6" id="sizeMedia" class="slider">
-</div>
+    <!-- STORY SECTIONS -->
+    <section data-field="count_total">
+      <h2>Overall Traffic Volume</h2>
+      <p>Total traffic intensity across intersections.</p>
+    </section>
 
-<div class="control">
-<b>Layer Order</b><br>
-<button onclick="bringFront('intersection-layer')">Intersections Front</button>
-<button onclick="bringFront('media-layer')">Media Front</button>
-</div>
+    <section data-field="count_motorbike">
+      <h2>Motorbike Count</h2>
+      <p>Absolute motorbike flow distribution.</p>
+    </section>
 
-<section data-field="count_total">
-<h2>Total Traffic Volume</h2>
-<p>Overall traffic intensity across intersections.</p>
-</section>
+    <section data-field="count_car">
+      <h2>Car Count</h2>
+      <p>Absolute car traffic distribution.</p>
+    </section>
 
-<section data-field="count_motorbike">
-<h2>Motorbike Count</h2>
-<p>Spatial distribution of motorbike flow.</p>
-</section>
+    <section data-field="count_bus">
+      <h2>Bus Count</h2>
+      <p>Bus traffic concentration across nodes.</p>
+    </section>
 
-<section data-field="count_car">
-<h2>Car Count</h2>
-<p>Car traffic intensity across nodes.</p>
-</section>
+    <section data-field="count_truck">
+      <h2>Truck Count</h2>
+      <p>Freight movement pattern in the network.</p>
+    </section>
 
-<section data-field="count_pedestrian">
-<h2>Pedestrian Count</h2>
-<p>Pedestrian activity level across intersections.</p>
-</section>
+    <section data-field="count_pedestrian">
+      <h2>Pedestrian Count</h2>
+      <p>Pedestrian activity level across intersections.</p>
+    </section>
 
-<section data-field="share_car" data-type="share">
-<h2>Car Share</h2>
-<p>Proportion of car traffic relative to total traffic.</p>
-</section>
+    <section data-field="share_mc" data-type="share">
+      <h2>Motorbike Share</h2>
+      <p>Proportion of motorbike traffic relative to total traffic.</p>
+    </section>
 
-<section data-field="share_mc" data-type="share">
-<h2>Motorbike Share</h2>
-<p>Relative dominance of motorbike trips.</p>
-</section>
+    <section data-field="share_car" data-type="share">
+      <h2>Car Share</h2>
+      <p>Proportion of car traffic relative to total traffic.</p>
+    </section>
 
-</div>
+    <section data-field="share_bus" data-type="share">
+      <h2>Bus Share</h2>
+      <p>Proportion of bus traffic relative to total traffic.</p>
+    </section>
 
-<div id="map"></div>
+    <section data-field="share_truck" data-type="share">
+      <h2>Truck Share</h2>
+      <p>Proportion of truck traffic relative to total traffic.</p>
+    </section>
+  </div>
 
+  <div id="map"></div>
 </div>
 
 <script>
+  // =========================
+  // CONFIG
+  // =========================
+  // Put your *restricted* public token here (pk....)
+  mapboxgl.accessToken = "YOUR_PK_TOKEN_HERE";
 
-mapboxgl.accessToken="pk.eyJ1IjoiZGVmZmllIiwiYSI6ImNtbTNqMmMxODAxaDAycXMyN255eWFwaGIifQ.X5T0rb3Cm_p1wZEYIAGfYQ";
+  const R2_BASE = "https://pub-5b55ba14d9c048b3988cab9249645020.r2.dev";
+  const INTERSECTION_CSV = "intersection.csv";
+  const MEDIA_CSV = "media_locations.csv";
 
-const R2="https://pub-5b55ba14d9c048b3988cab9249645020.r2.dev";
+  // =========================
+  // MAP INIT
+  // =========================
+  const map = new mapboxgl.Map({
+    container: "map",
+    style: "mapbox://styles/mapbox/light-v11",
+    center: [106.6868, 10.7815],
+    zoom: 13
+  });
+  map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
 
-const map=new mapboxgl.Map({
-container:"map",
-style:"mapbox://styles/mapbox/light-v11",
-center:[106.6868,10.7815],
-zoom:13
-});
+  // =========================
+  // HELPERS
+  // =========================
+  const statusEl = document.getElementById("status");
+  function setStatus(msg, kind="") {
+    statusEl.className = "status" + (kind ? " " + kind : "");
+    statusEl.textContent = msg;
+  }
 
-map.addControl(new mapboxgl.NavigationControl());
+  function csvUrl(name) {
+    return `${R2_BASE.replace(/\/$/, "")}/${name}`;
+  }
 
-function paletteColors(name){
-if(name==="red") return ["#fee5d9","#fcae91","#fb6a4a","#de2d26","#a50f15"];
-if(name==="green") return ["#edf8e9","#bae4b3","#74c476","#31a354","#006d2c"];
-if(name==="purple") return ["#f2f0f7","#cbc9e2","#9e9ac8","#756bb1","#54278f"];
-return ["#eff3ff","#bdd7e7","#6baed6","#3182bd","#08519c"];
-}
+  function parseNumber(x) {
+    const v = Number(String(x ?? "").trim());
+    return Number.isFinite(v) ? v : null;
+  }
 
-function updateLegend(min,max,colors,isShare){
-document.getElementById("legend").style.background=
-`linear-gradient(to right,${colors.join(",")})`;
+  function toGeo(rows, lonKey, latKey) {
+    const features = [];
+    for (const r of rows) {
+      const lon = parseNumber(r[lonKey]);
+      const lat = parseNumber(r[latKey]);
+      if (lon === null || lat === null) continue;
 
-if(isShare){
-document.getElementById("legendLabel").innerText=
-`${(min*100).toFixed(1)}% → ${(max*100).toFixed(1)}%`;
-}else{
-document.getElementById("legendLabel").innerText=
-`${min.toFixed(1)} → ${max.toFixed(1)}`;
-}
-}
+      // Keep original props, but also add numeric-casted values where possible
+      const props = { ...r };
+      for (const k of Object.keys(props)) {
+        const n = parseNumber(props[k]);
+        if (n !== null) props[k] = n;
+      }
 
-function toGeo(rows,lon,lat){
-return {
-type:"FeatureCollection",
-features:rows.filter(r=>r[lon]&&r[lat])
-.map(r=>({
-type:"Feature",
-geometry:{type:"Point",coordinates:[+r[lon],+r[lat]]},
-properties:r
-}))
-};
-}
+      features.push({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [lon, lat] },
+        properties: props
+      });
+    }
+    return { type: "FeatureCollection", features };
+  }
 
-async function loadCSV(name){
-return new Promise(res=>{
-Papa.parse(R2+"/"+name,{download:true,header:true,complete:r=>res(r.data)});
-});
-}
+  function paletteColors(name){
+    if(name==="red")   return ["#fff5f0","#fcbba1","#fc9272","#ef3b2c","#99000d"];
+    if(name==="green") return ["#f7fcf5","#c7e9c0","#74c476","#238b45","#00441b"];
+    if(name==="purple")return ["#fcfbfd","#dadaeb","#9e9ac8","#6a51a3","#3f007d"];
+    if(name==="gray")  return ["#f7f7f7","#cccccc","#969696","#636363","#252525"];
+    return ["#f7fbff","#c6dbef","#6baed6","#2171b5","#08306b"]; // blue
+  }
 
-async function init(){
+  function updateLegend(min, max, colors, isShare) {
+    document.getElementById("legend").style.background =
+      `linear-gradient(to right, ${colors.join(",")})`;
 
-const [iRows,mRows]=await Promise.all([
-loadCSV("intersection.csv"),
-loadCSV("media_locations.csv")
-]);
+    if (isShare) {
+      document.getElementById("legendLabel").textContent =
+        `${(min*100).toFixed(1)}% → ${(max*100).toFixed(1)}%`;
+    } else {
+      document.getElementById("legendLabel").textContent =
+        `${min.toFixed(1)} → ${max.toFixed(1)}`;
+    }
+  }
 
-const iGeo=toGeo(iRows,"lon","lat");
-const mGeo=toGeo(mRows,"Longitude","Latitude");
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-map.on("load",()=>{
+  async function fetchCsv(url) {
+    return new Promise((resolve, reject) => {
+      Papa.parse(url, {
+        download: true,
+        header: true,
+        dynamicTyping: false,
+        skipEmptyLines: true,
+        complete: res => resolve(res.data),
+        error: err => reject(err)
+      });
+    });
+  }
 
-map.addSource("intersections",{type:"geojson",data:iGeo});
-map.addLayer({
-id:"intersection-layer",
-type:"circle",
-source:"intersections",
-paint:{
-"circle-color":"#3182bd",
-"circle-radius":8,
-"circle-stroke-width":1,
-"circle-stroke-color":"#333"
-}
-});
+  // =========================
+  // MAIN
+  // =========================
+  let intersectionGeo = null;
+  let mediaGeo = null;
 
-map.addSource("media",{type:"geojson",data:mGeo});
-map.addLayer({
-id:"media-layer",
-type:"circle",
-source:"media",
-paint:{
-"circle-color":"#7c3aed",
-"circle-radius":6,
-"circle-stroke-width":1,
-"circle-stroke-color":"#333"
-}
-});
+  function setLayerVisibility(layerId, visible) {
+    if (!map.getLayer(layerId)) return;
+    map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
+  }
 
-updateColor("count_total");
+  function setCircleRadius(layerId, r) {
+    if (!map.getLayer(layerId)) return;
+    map.setPaintProperty(layerId, "circle-radius", r);
+  }
 
-});
+  function computeMinMax(geo, field) {
+    let min = Infinity, max = -Infinity;
+    for (const f of geo.features) {
+      const v = Number(f.properties?.[field]);
+      if (!Number.isFinite(v)) continue;
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return [0, 1];
+    if (min === max) return [min, min + 1e-9];
+    return [min, max];
+  }
 
-function updateColor(field){
+  function applyIntersectionStyle(field) {
+    if (!intersectionGeo || !map.getLayer("intersection-layer")) return;
 
-const palette=paletteColors(document.getElementById("palette").value);
-const values=iGeo.features.map(f=>+f.properties[field]).filter(v=>!isNaN(v));
-const min=Math.min(...values);
-const max=Math.max(...values);
-const isShare=field.startsWith("share_");
+    const colors = paletteColors(document.getElementById("palette").value);
+    const isShare = field.startsWith("share_");
 
-updateLegend(min,max,palette,isShare);
+    // For shares, you can optionally fix to [0,1] for consistent interpretation.
+    // Here we keep data-driven min/max for a course-friendly look.
+    const [min, max] = computeMinMax(intersectionGeo, field);
 
-map.setPaintProperty("intersection-layer","circle-color",[
-"interpolate",["linear"],
-["to-number",["get",field]],
-min,palette[0],
-max,palette[4]
-]);
+    updateLegend(min, max, colors, isShare);
 
-}
+    map.setPaintProperty("intersection-layer", "circle-color", [
+      "interpolate", ["linear"],
+      ["coalesce", ["to-number", ["get", field]], min],
+      min, colors[0],
+      min + (max-min)*0.25, colors[1],
+      min + (max-min)*0.50, colors[2],
+      min + (max-min)*0.75, colors[3],
+      max, colors[4]
+    ]);
+  }
 
-document.getElementById("palette").addEventListener("change",()=>{
-const active=document.querySelector("section.active");
-if(active) updateColor(active.dataset.field);
-});
+  function bringFront(id) {
+    if (!map.getLayer(id)) return;
+    // Move to top of the style's layer stack
+    map.moveLayer(id);
+  }
 
-document.getElementById("sizeIntersection")
-.addEventListener("input",e=>{
-map.setPaintProperty("intersection-layer","circle-radius",+e.target.value);
-});
+  async function init() {
+    setStatus("Loading CSV…");
 
-document.getElementById("sizeMedia")
-.addEventListener("input",e=>{
-map.setPaintProperty("media-layer","circle-radius",+e.target.value);
-});
+    try {
+      const [intersectionRows, mediaRows] = await Promise.all([
+        fetchCsv(csvUrl(INTERSECTION_CSV)),
+        fetchCsv(csvUrl(MEDIA_CSV))
+      ]);
 
-document.getElementById("toggleMedia")
-.addEventListener("change",e=>{
-map.setLayoutProperty("media-layer",
-"visibility",e.target.checked?"visible":"none");
-});
+      intersectionGeo = toGeo(intersectionRows, "lon", "lat");
+      mediaGeo = toGeo(mediaRows, "Longitude", "Latitude");
 
-window.bringFront=function(id){
-map.moveLayer(id);
-};
+      setStatus(
+        `Loaded: intersections=${intersectionGeo.features.length}, media=${mediaGeo.features.length}`,
+        "ok"
+      );
+    } catch (e) {
+      console.error(e);
+      setStatus("Failed to load CSV (CORS / file name / public access). Check DevTools Network.", "error");
+      return;
+    }
 
-map.on("click","intersection-layer",e=>{
-const p=e.features[0].properties;
-let html="";
-for(let k in p){html+=`<b>${k}</b>: ${p[k]}<br>`}
-new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(html).addTo(map);
-});
+    const addLayers = () => {
+      // Fit to data bounds
+      const allCoords = [
+        ...intersectionGeo.features.map(f => f.geometry.coordinates),
+        ...mediaGeo.features.map(f => f.geometry.coordinates)
+      ];
+      if (allCoords.length) {
+        const bounds = allCoords.reduce(
+          (b, c) => b.extend(c),
+          new mapboxgl.LngLatBounds(allCoords[0], allCoords[0])
+        );
+        map.fitBounds(bounds, { padding: { left: 360, top: 50, right: 50, bottom: 50 }, duration: 800 });
+      }
 
-map.on("click","media-layer",e=>{
-const p=e.features[0].properties;
-const url=p.URL||p.url;
-let html="";
-if(url && url.match(/\.(mp4|mov|webm)$/i)){
-html=`<video controls src="${url}" width="250"></video>`;
-}else{
-html=`<img src="${url}" width="250">`;
-}
-new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(html).addTo(map);
-});
+      // Sources
+      map.addSource("intersections", { type: "geojson", data: intersectionGeo });
+      map.addSource("media", { type: "geojson", data: mediaGeo });
 
-const sections=document.querySelectorAll("section");
-const observer=new IntersectionObserver(entries=>{
-entries.forEach(entry=>{
-if(entry.isIntersecting){
-sections.forEach(s=>s.classList.remove("active"));
-entry.target.classList.add("active");
-updateColor(entry.target.dataset.field);
-}
-});
-},{threshold:0.6});
+      // Layers
+      map.addLayer({
+        id: "intersection-layer",
+        type: "circle",
+        source: "intersections",
+        paint: {
+          "circle-color": "#2171b5",
+          "circle-radius": Number(document.getElementById("sizeIntersection").value),
+          "circle-opacity": 0.9,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "rgba(0,0,0,0.35)"
+        }
+      });
 
-sections.forEach(s=>observer.observe(s));
+      map.addLayer({
+        id: "media-layer",
+        type: "circle",
+        source: "media",
+        paint: {
+          "circle-color": "rgba(124, 58, 237, 0.9)",
+          "circle-radius": Number(document.getElementById("sizeMedia").value),
+          "circle-opacity": 0.9,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "rgba(0,0,0,0.35)"
+        }
+      });
 
-}
+      // Controls: palette
+      document.getElementById("palette").addEventListener("change", () => {
+        const active = document.querySelector("section.active") || document.querySelector("section[data-field]");
+        if (active) applyIntersectionStyle(active.dataset.field);
+      });
 
-init();
+      // Controls: sizes
+      document.getElementById("sizeIntersection").addEventListener("input", (e) => {
+        setCircleRadius("intersection-layer", Number(e.target.value));
+      });
 
+      document.getElementById("sizeMedia").addEventListener("input", (e) => {
+        setCircleRadius("media-layer", Number(e.target.value));
+      });
+
+      // Controls: media visibility
+      document.getElementById("toggleMedia").addEventListener("change", (e) => {
+        setLayerVisibility("media-layer", e.target.checked);
+      });
+
+      // Controls: layer order
+      document.getElementById("btnFrontIntersections").addEventListener("click", () => bringFront("intersection-layer"));
+      document.getElementById("btnFrontMedia").addEventListener("click", () => bringFront("media-layer"));
+
+      // Click: intersection popup
+      map.on("click", "intersection-layer", (e) => {
+        const f = e.features && e.features[0];
+        if (!f) return;
+
+        // Show the most relevant fields first
+        const p = f.properties || {};
+        const keys = [
+          "intersection_id","region_name","station_name","date","time_start","observer_id",
+          "count_motorbike","count_car","count_bus","count_truck","count_pedestrian","count_total",
+          "share_mc","share_car","share_bus","share_truck"
+        ];
+
+        let html = `<div style="font-size:12px;line-height:1.35">`;
+        for (const k of keys) {
+          if (p[k] === undefined || p[k] === null || String(p[k]).trim() === "") continue;
+          html += `<div><b>${escapeHtml(k)}:</b> ${escapeHtml(p[k])}</div>`;
+        }
+        html += `</div>`;
+
+        new mapboxgl.Popup({ maxWidth: "380px" })
+          .setLngLat(f.geometry.coordinates)
+          .setHTML(html)
+          .addTo(map);
+      });
+
+      // Click: media popup + auto zoom + bigger media
+      map.on("click", "media-layer", (e) => {
+        const f = e.features && e.features[0];
+        if (!f) return;
+
+        const p = f.properties || {};
+        const url = p.URL || p.url || "";
+        const filename = p.Filename || p.filename || "";
+        const mediaType = String(p.MediaType || "").toLowerCase();
+
+        // Auto zoom to the clicked media point (and offset for story panel)
+        const targetZoom = Math.max(map.getZoom(), 16);
+        map.easeTo({
+          center: f.geometry.coordinates,
+          zoom: targetZoom,
+          padding: { left: 360, top: 60, right: 60, bottom: 60 },
+          duration: 800,
+          essential: true
+        });
+
+        const isVideo = mediaType === "video" || /\.(mp4|mov|webm)$/i.test(url);
+
+        let mediaHtml = "";
+        if (isVideo) {
+          mediaHtml = `
+            <div class="popup-media">
+              <video controls playsinline preload="metadata" src="${escapeHtml(url)}"></video>
+            </div>`;
+        } else {
+          mediaHtml = `
+            <div class="popup-media">
+              <img src="${escapeHtml(url)}" alt="${escapeHtml(filename)}">
+            </div>`;
+        }
+
+        const infoHtml = `
+          <div style="margin-top:8px;font-size:12px;line-height:1.35">
+            ${filename ? `<div><b>Filename:</b> ${escapeHtml(filename)}</div>` : ""}
+            <div><a href="${escapeHtml(url)}" target="_blank" rel="noopener">Open file</a></div>
+          </div>`;
+
+        new mapboxgl.Popup({ maxWidth: "520px" })
+          .setLngLat(f.geometry.coordinates)
+          .setHTML(mediaHtml + infoHtml)
+          .addTo(map);
+      });
+
+      // Pointer cursor
+      for (const layerId of ["intersection-layer", "media-layer"]) {
+        map.on("mouseenter", layerId, () => map.getCanvas().style.cursor = "pointer");
+        map.on("mouseleave", layerId, () => map.getCanvas().style.cursor = "");
+      }
+
+      // Scroll-driven: switch field when a section becomes active
+      const sections = document.querySelectorAll("section[data-field]");
+      const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          sections.forEach(s => s.classList.remove("active"));
+          entry.target.classList.add("active");
+          applyIntersectionStyle(entry.target.dataset.field);
+        }
+      }, { threshold: 0.6 });
+
+      sections.forEach(s => observer.observe(s));
+
+      // Initialize with the first section
+      const first = document.querySelector("section[data-field]");
+      if (first) {
+        first.classList.add("active");
+        applyIntersectionStyle(first.dataset.field);
+      }
+    };
+
+    // IMPORTANT: handle map load race condition
+    if (map.loaded()) addLayers();
+    else map.on("load", addLayers);
+  }
+
+  init();
 </script>
 </body>
 </html>
