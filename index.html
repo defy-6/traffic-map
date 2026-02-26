@@ -39,19 +39,27 @@
     .status.error { color: #b91c1c; }
     .status.ok { color: #166534; }
 
+    /* Bigger media in popup */
     .mapboxgl-popup-content { max-width: 560px; }
     .popup-media img, .popup-media video { width: 100%; border-radius: 10px; display: block; background: #000; }
     .popup-media img { max-height: 420px; object-fit: cover; }
     .popup-media video { max-height: 420px; }
 
+    /* Map overlays (title + legend) */
     .map-overlay { position: absolute; z-index: 2; background: rgba(255,255,255,0.92); border: 1px solid rgba(0,0,0,0.15); border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,0.10); backdrop-filter: blur(6px); padding: 10px 12px; max-width: 360px; pointer-events: none; }
     #mapTitleOverlay { top: 12px; left: 12px; }
-    #mapLegendOverlay { top: 12px; right: 12px; width: 260px; }
+    #mapLegendOverlay { top: 12px; right: 12px; width: 280px; }
+
     .mapTitle { font-size: 13px; font-weight: 700; margin: 0 0 2px 0; }
     .mapSubtitle { font-size: 12px; color: #444; margin: 0; line-height: 1.3; }
+
     .mapLegendTitle { font-size: 12px; font-weight: 700; margin: 0 0 6px 0; }
     #mapLegendBar { height: 12px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.15); }
     #mapLegendLabel { font-size: 12px; color: #333; margin-top: 6px; }
+
+    /* Media type legend */
+    .typeLegend { margin-top: 10px; font-size: 12px; color: #333; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .swatch { width: 10px; height: 10px; border-radius: 999px; display: inline-block; margin-right: 6px; border: 1px solid rgba(0,0,0,0.2); }
   </style>
 </head>
 
@@ -114,21 +122,32 @@
       <div id="mapTitle" class="mapTitle">—</div>
       <p id="mapSubtitle" class="mapSubtitle">—</p>
     </div>
+
     <div id="mapLegendOverlay" class="map-overlay">
       <div id="mapLegendTitle" class="mapLegendTitle">Legend</div>
       <div id="mapLegendBar"></div>
       <div id="mapLegendLabel">—</div>
+      <div class="typeLegend" aria-label="Media type legend">
+        <span><span class="swatch" style="background:#2563eb"></span>Photo</span>
+        <span><span class="swatch" style="background:#dc2626"></span>Video</span>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+  // =========================
+  // CONFIG
+  // =========================
   mapboxgl.accessToken = "pk.eyJ1IjoiZGVmZmllIiwiYSI6ImNtbTNqMmMxODAxaDAycXMyN255eWFwaGIifQ.X5T0rb3Cm_p1wZEYIAGfYQ";
 
   const R2_BASE = "https://pub-5b55ba14d9c048b3988cab9249645020.r2.dev";
   const INTERSECTION_CSV = "intersection.csv";
   const MEDIA_CSV = "media_locations.csv";
 
+  // =========================
+  // MAP INIT
+  // =========================
   const map = new mapboxgl.Map({
     container: "map",
     style: "mapbox://styles/mapbox/light-v11",
@@ -137,6 +156,9 @@
   });
   map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
 
+  // =========================
+  // HELPERS
+  // =========================
   const statusEl = document.getElementById("status");
   function setStatus(msg, kind="") {
     statusEl.className = "status" + (kind ? " " + kind : "");
@@ -147,6 +169,7 @@
     return `${R2_BASE.replace(/\/$/, "")}/${name}`;
   }
 
+  // Parse numeric strings, including "82.14%" -> 0.8214
   function parseNumber(x) {
     const s = String(x ?? "").trim();
     if (!s) return null;
@@ -174,7 +197,6 @@
       if (!latKey && [...latCandidates].some(c => c && nk === norm(c))) latKey = orig;
     }
 
-    // Loose contains match fallback
     if (!lonKey) {
       lonKey = (nkeys.find(([o,nk]) => nk.includes("lon") || nk.includes("lng") || nk.includes("longitude") || nk.includes("经度") || nk.includes("經度")) || [null])[0];
     }
@@ -186,25 +208,53 @@
     return { lonKey, latKey };
   }
 
-  function toGeo(rows, lonKey, latKey) {
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function inferMediaType(props) {
+    // Prefer explicit MediaType if present
+    const mt = String(props.MediaType || props.media_type || props.type || "").toLowerCase().trim();
+    if (mt.includes("video")) return "video";
+    if (mt.includes("photo") || mt.includes("image") || mt.includes("pic")) return "photo";
+
+    const url = String(props.URL || props.url || props.href || "").trim();
+    if (/\.(mp4|mov|webm)$/i.test(url)) return "video";
+    if (/\.(jpg|jpeg|png|gif|webp|heic)$/i.test(url)) return "photo";
+
+    // Fallback: if it is not a recognized video, treat as photo
+    return "photo";
+  }
+
+  function toGeo(rows, lonKey, latKey, kind) {
     const features = [];
     for (const r of rows) {
       let lon = parseNumber(r[lonKey]);
       let lat = parseNumber(r[latKey]);
       if (lon === null || lat === null) continue;
 
-      // Auto-fix swapped coords (lat>90 but lon within [-90,90] is a common sign)
+      // Auto-fix swapped coords
       if (Math.abs(lat) > 90 && Math.abs(lon) <= 90) {
         const tmp = lon; lon = lat; lat = tmp;
       }
-
-      // Filter obviously invalid coords
       if (Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
 
       const props = { ...r };
+
+      // Convert numeric-like values (including % -> 0-1)
       for (const k of Object.keys(props)) {
         const n = parseNumber(props[k]);
-        if (n !== null) props[k] = n; // includes % -> 0-1
+        if (n !== null) props[k] = n;
+      }
+
+      // Add derived media type field for styling
+      if (kind === "media") {
+        props.__mediaType = inferMediaType(props);
       }
 
       features.push({
@@ -229,9 +279,11 @@
       ? `${(min*100).toFixed(0)}% → ${(max*100).toFixed(0)}%`
       : `${min.toFixed(0)} → ${max.toFixed(0)}`;
 
+    // Story panel legend
     document.getElementById("legend").style.background = `linear-gradient(to right, ${colors.join(",")})`;
     document.getElementById("legendLabel").textContent = label;
 
+    // Map legend overlay
     document.getElementById("mapLegendTitle").textContent = fieldLabel || "Legend";
     document.getElementById("mapLegendBar").style.background = `linear-gradient(to right, ${colors.join(",")})`;
     document.getElementById("mapLegendLabel").textContent = label;
@@ -254,6 +306,9 @@
     });
   }
 
+  // =========================
+  // MAIN
+  // =========================
   let intersectionGeo = null;
   let mediaGeo = null;
 
@@ -281,7 +336,7 @@
     const subtitle = sectionEl?.querySelector("p")?.textContent || "";
     setMapTitle(title, subtitle);
 
-    updateLegend(min, max, colors, isShare, `${title} (${field})`);
+    updateLegend(min, max, colors, isShare, `${title}`);
 
     map.setPaintProperty("intersection-layer", "circle-color", [
       "interpolate", ["linear"],
@@ -326,17 +381,11 @@
     const iKeys = findCoordKeys(intersectionRows, "lon", "lat");
     const mKeys = findCoordKeys(mediaRows, "Longitude", "Latitude");
 
-    if (!iKeys) {
-      setStatus("Intersection CSV: cannot find lon/lat columns.", "error");
-      return;
-    }
-    if (!mKeys) {
-      setStatus("Media CSV: cannot find Longitude/Latitude columns.", "error");
-      return;
-    }
+    if (!iKeys) { setStatus("Intersection CSV: cannot find lon/lat columns.", "error"); return; }
+    if (!mKeys) { setStatus("Media CSV: cannot find Longitude/Latitude columns.", "error"); return; }
 
-    intersectionGeo = toGeo(intersectionRows, iKeys.lonKey, iKeys.latKey);
-    mediaGeo = toGeo(mediaRows, mKeys.lonKey, mKeys.latKey);
+    intersectionGeo = toGeo(intersectionRows, iKeys.lonKey, iKeys.latKey, "intersection");
+    mediaGeo = toGeo(mediaRows, mKeys.lonKey, mKeys.latKey, "media");
 
     setStatus(
       `Loaded rows: intersections=${intersectionRows.length}, media=${mediaRows.length} | points: intersections=${intersectionGeo.features.length}, media=${mediaGeo.features.length}`,
@@ -361,6 +410,7 @@
       map.addSource("intersections", { type: "geojson", data: intersectionGeo });
       map.addSource("media", { type: "geojson", data: mediaGeo });
 
+      // Intersections layer
       map.addLayer({
         id: "intersection-layer",
         type: "circle",
@@ -374,105 +424,39 @@
         }
       });
 
+      // Media halo for videos (optional but nice)
+      map.addLayer({
+        id: "media-video-halo",
+        type: "circle",
+        source: "media",
+        filter: ["==", ["get", "__mediaType"], "video"],
+        paint: {
+          "circle-radius": Number(document.getElementById("sizeMedia").value) + 4,
+          "circle-color": "#fca5a5",
+          "circle-opacity": 0.6
+        }
+      });
+
+      // Media points with type-based color
       map.addLayer({
         id: "media-layer",
         type: "circle",
         source: "media",
         paint: {
-          "circle-color": "rgba(124, 58, 237, 0.9)",
+          "circle-color": [
+            "match",
+            ["get", "__mediaType"],
+            "video", "#dc2626",
+            "photo", "#2563eb",
+            "#6b7280"
+          ],
           "circle-radius": Number(document.getElementById("sizeMedia").value),
           "circle-opacity": 0.9,
           "circle-stroke-width": 1,
-          "circle-stroke-color": "rgba(0,0,0,0.35)"
+          "circle-stroke-color": "white"
         }
       });
-// -------------------------
-// Click: intersection popup
-// -------------------------
-map.on("click", "intersection-layer", (e) => {
-  const f = e.features && e.features[0];
-  if (!f) return;
 
-  const p = f.properties || {};
-  const keys = [
-    "intersection_id","region_name","station_name","date","time_start","observer_id",
-    "count_motorbike","count_car","count_bus","count_truck","count_total",
-    "share_mc","share_car","share_bus","share_truck"
-  ];
-
-  let html = `<div style="font-size:12px;line-height:1.35">`;
-  for (const k of keys) {
-    if (p[k] === undefined || p[k] === null || String(p[k]).trim() === "") continue;
-
-    // Format shares back to %
-    if (String(k).startsWith("share_") && Number.isFinite(Number(p[k]))) {
-      html += `<div><b>${k}:</b> ${(Number(p[k]) * 100).toFixed(2)}%</div>`;
-    } else {
-      html += `<div><b>${k}:</b> ${p[k]}</div>`;
-    }
-  }
-  html += `</div>`;
-
-  new mapboxgl.Popup({ maxWidth: "380px" })
-    .setLngLat(f.geometry.coordinates)
-    .setHTML(html)
-    .addTo(map);
-});
-
-// -------------------------
-// Click: media popup + auto zoom
-// -------------------------
-map.on("click", "media-layer", (e) => {
-  const f = e.features && e.features[0];
-  if (!f) return;
-
-  const p = f.properties || {};
-  const url = p.URL || p.url || "";
-  const filename = p.Filename || p.filename || "";
-  const mediaType = String(p.MediaType || "").toLowerCase();
-
-  // Auto zoom + left padding (story panel)
-  const targetZoom = Math.max(map.getZoom(), 16);
-  map.easeTo({
-    center: f.geometry.coordinates,
-    zoom: targetZoom,
-    padding: { left: 360, top: 70, right: 70, bottom: 70 },
-    duration: 800,
-    essential: true
-  });
-
-  const isVideo = mediaType === "video" || /\.(mp4|mov|webm)$/i.test(url);
-
-  let mediaHtml = "";
-  if (isVideo) {
-    mediaHtml = `
-      <div class="popup-media">
-        <video controls playsinline preload="metadata" src="${url}"></video>
-      </div>`;
-  } else {
-    mediaHtml = `
-      <div class="popup-media">
-        <img src="${url}" alt="${filename}">
-      </div>`;
-  }
-
-  const infoHtml = `
-    <div style="margin-top:8px;font-size:12px;line-height:1.35">
-      ${filename ? `<div><b>Filename:</b> ${filename}</div>` : ""}
-      <div><a href="${url}" target="_blank" rel="noopener">Open file</a></div>
-    </div>`;
-
-  new mapboxgl.Popup({ maxWidth: "560px" })
-    .setLngLat(f.geometry.coordinates)
-    .setHTML(mediaHtml + infoHtml)
-    .addTo(map);
-});
-
-// Pointer cursor
-for (const layerId of ["intersection-layer", "media-layer"]) {
-  map.on("mouseenter", layerId, () => map.getCanvas().style.cursor = "pointer");
-  map.on("mouseleave", layerId, () => map.getCanvas().style.cursor = "");
-}
       // Controls
       document.getElementById("palette").addEventListener("change", () => {
         const active = document.querySelector("section.active") || document.querySelector("section[data-field]");
@@ -484,15 +468,99 @@ for (const layerId of ["intersection-layer", "media-layer"]) {
       });
 
       document.getElementById("sizeMedia").addEventListener("input", (e) => {
-        setCircleRadius("media-layer", Number(e.target.value));
+        const r = Number(e.target.value);
+        setCircleRadius("media-layer", r);
+        if (map.getLayer("media-video-halo")) map.setPaintProperty("media-video-halo", "circle-radius", r + 4);
       });
 
       document.getElementById("toggleMedia").addEventListener("change", (e) => {
-        setLayerVisibility("media-layer", e.target.checked);
+        const on = e.target.checked;
+        setLayerVisibility("media-layer", on);
+        setLayerVisibility("media-video-halo", on);
       });
 
       document.getElementById("btnFrontIntersections").addEventListener("click", () => bringFront("intersection-layer"));
-      document.getElementById("btnFrontMedia").addEventListener("click", () => bringFront("media-layer"));
+      document.getElementById("btnFrontMedia").addEventListener("click", () => {
+        // Ensure halo stays below the media points
+        bringFront("media-video-halo");
+        bringFront("media-layer");
+      });
+
+      // Click: intersection popup
+      map.on("click", "intersection-layer", (e) => {
+        const f = e.features && e.features[0];
+        if (!f) return;
+
+        const p = f.properties || {};
+        const keys = [
+          "intersection_id","region_name","station_name","date","time_start","observer_id",
+          "count_motorbike","count_car","count_bus","count_truck","count_total",
+          "share_mc","share_car","share_bus","share_truck"
+        ];
+
+        let html = `<div style="font-size:12px;line-height:1.35">`;
+        for (const k of keys) {
+          if (p[k] === undefined || p[k] === null || String(p[k]).trim() === "") continue;
+          if (String(k).startsWith("share_") && Number.isFinite(Number(p[k]))) {
+            html += `<div><b>${escapeHtml(k)}:</b> ${(Number(p[k]) * 100).toFixed(2)}%</div>`;
+          } else {
+            html += `<div><b>${escapeHtml(k)}:</b> ${escapeHtml(p[k])}</div>`;
+          }
+        }
+        html += `</div>`;
+
+        new mapboxgl.Popup({ maxWidth: "380px" })
+          .setLngLat(f.geometry.coordinates)
+          .setHTML(html)
+          .addTo(map);
+      });
+
+      // Click: media popup + auto zoom + big media
+      map.on("click", "media-layer", (e) => {
+        const f = e.features && e.features[0];
+        if (!f) return;
+
+        const p = f.properties || {};
+        const url = String(p.URL || p.url || "").trim();
+        const filename = String(p.Filename || p.filename || "").trim();
+        const mt = String(p.__mediaType || "").toLowerCase();
+
+        const targetZoom = Math.max(map.getZoom(), 16);
+        map.easeTo({
+          center: f.geometry.coordinates,
+          zoom: targetZoom,
+          padding: { left: 360, top: 70, right: 70, bottom: 70 },
+          duration: 800,
+          essential: true
+        });
+
+        const isVideo = (mt === "video") || /\.(mp4|mov|webm)$/i.test(url);
+
+        let mediaHtml = "";
+        if (isVideo) {
+          mediaHtml = `<div class="popup-media"><video controls playsinline preload="metadata" src="${escapeHtml(url)}"></video></div>`;
+        } else {
+          mediaHtml = `<div class="popup-media"><img src="${escapeHtml(url)}" alt="${escapeHtml(filename)}"></div>`;
+        }
+
+        const infoHtml = `
+          <div style="margin-top:8px;font-size:12px;line-height:1.35">
+            ${filename ? `<div><b>Filename:</b> ${escapeHtml(filename)}</div>` : ""}
+            <div><b>Type:</b> ${isVideo ? "Video" : "Photo"}</div>
+            <div><a href="${escapeHtml(url)}" target="_blank" rel="noopener">Open file</a></div>
+          </div>`;
+
+        new mapboxgl.Popup({ maxWidth: "560px" })
+          .setLngLat(f.geometry.coordinates)
+          .setHTML(mediaHtml + infoHtml)
+          .addTo(map);
+      });
+
+      // Pointer cursor
+      for (const layerId of ["intersection-layer", "media-layer"]) {
+        map.on("mouseenter", layerId, () => map.getCanvas().style.cursor = "pointer");
+        map.on("mouseleave", layerId, () => map.getCanvas().style.cursor = "");
+      }
 
       // Scroll observer
       const sections = document.querySelectorAll("section[data-field]");
