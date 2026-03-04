@@ -10,130 +10,423 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
-    html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
-    .container { display: flex; height: 100%; }
-    #story { width: 32%; min-width: 320px; max-width: 520px; overflow-y: auto; padding: 22px 22px 60px 22px; background: #f7f7f7; border-right: 1px solid #ddd; }
-    #map { flex: 1; position: relative; }
+    :root{
+      --bg:#ffffff;
+      --ink:#0a0a0a;
+      --muted:#52525b;
+      --line:#e4e4e7;
+      --soft:#18181b;
+      --panel:#f7f7f7;
+      --shadow:0 20px 60px rgba(0,0,0,.08);
+      --max:1200px;
+      --radius:14px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--ink);
+      background:var(--bg);
+      -webkit-font-smoothing:antialiased;
+    }
+    a{color:inherit;text-decoration:none}
 
-    h1 { margin: 0 0 6px 0; font-size: 20px; }
-    .sub { margin: 0 0 18px 0; color: #555; font-size: 13px; line-height: 1.4; }
+    /* ===== Top Nav ===== */
+    .topnav{
+      position:sticky; top:0; z-index:999;
+      background:rgba(10,10,10,.98);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid #27272a;
+    }
+    .nav-inner{
+      max-width:var(--max);
+      margin:0 auto;
+      padding:14px 18px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      font-weight:900;
+      font-size:14.5px;
+      letter-spacing:-.3px;
+      color:#fff;
+      white-space:nowrap;
+    }
+    .nav-links{display:flex; gap:4px; align-items:center; flex-wrap:wrap}
+    .nav-links a, .nav-links button{
+      padding:8px 12px;
+      border-radius:10px;
+      font-size:13px;
+      font-weight:650;
+      color:#e5e5e7;
+      border:0;
+      background:transparent;
+      cursor:pointer;
+      transition:.15s;
+    }
+    .nav-links a:hover, .nav-links button:hover{background:var(--soft)}
+    .nav-cta{
+      background:#fff !important;
+      color:#0a0a0a !important;
+      margin-left:6px;
+    }
+    .nav-cta:hover{background:#f5f5f5 !important}
 
-    .control { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e6e6e6; }
-    .control:first-of-type { border-top: none; padding-top: 0; }
-    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    label { user-select: none; }
-    select { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 10px; background: white; font-size: 13px; }
-    input[type="range"] { width: 100%; }
-    button { padding: 7px 10px; border-radius: 10px; border: 1px solid #ddd; background: white; cursor: pointer; font-size: 13px; }
-    button:hover { background: #f1f1f1; }
+    .dropdown{position:relative}
+    .menu{
+      position:absolute; top:100%; left:0;
+      min-width:220px;
+      background:#18181b;
+      border:1px solid #27272a;
+      border-radius:12px;
+      padding:8px;
+      box-shadow:var(--shadow);
+      display:none;
+      margin-top:6px;
+    }
+    .menu a{
+      display:block;
+      padding:10px 12px;
+      border-radius:10px;
+      font-weight:650;
+      font-size:13px;
+      color:#e5e5e7;
+      transition:.15s;
+    }
+    .menu a:hover{background:#27272a}
+    .dropdown:focus-within .menu{display:block}
 
-    .legend { height: 14px; border-radius: 999px; margin-top: 8px; border: 1px solid #ddd; }
-    .legendLabel { margin-top: 6px; font-size: 12px; color: #444; }
+    /* ===== Layout ===== */
+    .layout{
+      height:calc(100% - 52px);
+      display:flex;
+      min-height:0;
+    }
 
-    section { margin-top: 54px; padding: 14px 14px; background: white; border: 1px solid #e6e6e6; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.05); }
-    section.active { border-color: #b7c6ff; box-shadow: 0 8px 24px rgba(60,90,255,0.12); }
-    section h2 { margin: 0 0 6px 0; font-size: 15px; }
-    section p { margin: 0; color: #555; font-size: 13px; line-height: 1.4; }
+    /* Story panel */
+    #story{
+      width:34%;
+      min-width:340px;
+      max-width:560px;
+      overflow:auto;
+      background:var(--panel);
+      border-right:1px solid var(--line);
+      padding:22px 18px 64px 18px;
+      scroll-behavior:smooth;
+    }
 
-    .status { margin-top: 10px; font-size: 12px; color: #444; }
-    .status.error { color: #b91c1c; }
-    .status.ok { color: #166534; }
+    /* Hero block inside story panel */
+    .story-hero{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 10px 28px rgba(0,0,0,.06);
+      padding:16px 14px;
+    }
+    .story-hero h1{
+      font-size:18px;
+      line-height:1.2;
+      margin:0 0 6px 0;
+      letter-spacing:-.2px;
+    }
+    .story-hero p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.55;
+    }
+    .hero-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:700;
+      font-size:12.5px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      cursor:pointer;
+      transition:.15s;
+    }
+    .btn:hover{transform:translateY(-1px); box-shadow:0 10px 24px rgba(0,0,0,.06)}
+    .btn.primary{
+      background:#0a0a0a;
+      color:#fff;
+      border-color:#0a0a0a;
+    }
+    .btn.primary:hover{background:#111}
 
-    /* Bigger media in popup */
-    .mapboxgl-popup-content { max-width: 560px; }
-    .popup-media img, .popup-media video { width: 100%; border-radius: 10px; display: block; background: #000; }
-    .popup-media img { max-height: 420px; object-fit: cover; }
-    .popup-media video { max-height: 420px; }
+    /* Controls as panels */
+    .panel{
+      margin-top:14px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:14px;
+    }
+    .panel h3{
+      font-size:12px;
+      letter-spacing:.9px;
+      text-transform:uppercase;
+      font-weight:900;
+      margin:0 0 10px 0;
+    }
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    label{user-select:none; font-size:13px; color:#111}
+    select{
+      width:100%;
+      padding:9px 10px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      font-size:13px;
+    }
+    input[type="range"]{width:100%}
+    button{
+      padding:9px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:650;
+      transition:.15s;
+    }
+    button:hover{background:#f4f4f5}
 
-    /* Map overlays (title + legend) */
-    .map-overlay { position: absolute; z-index: 2; background: rgba(255,255,255,0.92); border: 1px solid rgba(0,0,0,0.15); border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,0.10); backdrop-filter: blur(6px); padding: 10px 12px; max-width: 360px; pointer-events: none; }
-    #mapTitleOverlay { top: 12px; left: 12px; }
-    #mapLegendOverlay { top: 12px; right: 12px; width: 280px; }
+    .legend{height:12px;border-radius:999px;margin-top:8px;border:1px solid var(--line)}
+    .legendLabel{margin-top:6px;font-size:12px;color:#444}
 
-    .mapTitle { font-size: 13px; font-weight: 700; margin: 0 0 2px 0; }
-    .mapSubtitle { font-size: 12px; color: #444; margin: 0; line-height: 1.3; }
+    .status{margin-top:10px;font-size:12px;color:#444}
+    .status.error{color:#b91c1c}
+    .status.ok{color:#166534}
 
-    .mapLegendTitle { font-size: 12px; font-weight: 700; margin: 0 0 6px 0; }
-    #mapLegendBar { height: 12px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.15); }
-    #mapLegendLabel { font-size: 12px; color: #333; margin-top: 6px; }
+    /* Chapters */
+    .chapters{margin-top:18px}
+    .chapters-group-title{
+      margin-top:18px;
+      font-size:11.5px;
+      letter-spacing:1.1px;
+      text-transform:uppercase;
+      font-weight:900;
+      color:#111;
+      opacity:.78;
+    }
+    section{
+      margin-top:12px;
+      padding:14px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 8px 22px rgba(0,0,0,0.05);
+      transition:.15s;
+      outline:none;
+    }
+    section:hover{transform:translateY(-1px)}
+    section.active{
+      border-color:#111827;
+      box-shadow:0 12px 30px rgba(0,0,0,0.10);
+    }
+    section h2{margin:0 0 6px 0;font-size:14px;letter-spacing:-.1px}
+    section p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 
-    /* Media type legend */
-    .typeLegend { margin-top: 10px; font-size: 12px; color: #333; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .swatch { width: 10px; height: 10px; border-radius: 999px; display: inline-block; margin-right: 6px; border: 1px solid rgba(0,0,0,0.2); }
+    /* Map */
+    #map{
+      flex:1;
+      position:relative;
+      min-width:0;
+    }
+    #mapCanvas{
+      position:absolute;
+      inset:0;
+    }
+
+    /* Popup media */
+    .mapboxgl-popup-content{max-width:560px}
+    .popup-media img,.popup-media video{
+      width:100%;
+      border-radius:12px;
+      display:block;
+      background:#000;
+    }
+    .popup-media img{max-height:420px;object-fit:cover}
+    .popup-media video{max-height:420px}
+
+    /* Map overlays */
+    .map-overlay{
+      position:absolute; z-index:2;
+      background:rgba(255,255,255,0.92);
+      border:1px solid rgba(0,0,0,0.14);
+      border-radius:14px;
+      box-shadow:0 12px 28px rgba(0,0,0,0.12);
+      backdrop-filter: blur(8px);
+      padding:10px 12px;
+      max-width:360px;
+      pointer-events:none;
+    }
+    #mapTitleOverlay{top:12px;left:12px}
+    #mapLegendOverlay{top:12px;right:12px;width:280px}
+    .mapTitle{font-size:13px;font-weight:800;margin:0 0 2px 0}
+    .mapSubtitle{font-size:12px;color:#444;margin:0;line-height:1.3}
+    .mapLegendTitle{font-size:12px;font-weight:800;margin:0 0 6px 0}
+    #mapLegendBar{height:12px;border-radius:999px;border:1px solid rgba(0,0,0,0.15)}
+    #mapLegendLabel{font-size:12px;color:#333;margin-top:6px}
+
+    .typeLegend{
+      margin-top:10px;
+      font-size:12px;
+      color:#333;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .swatch{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:6px;border:1px solid rgba(0,0,0,0.2)}
+
+    /* Mobile */
+    @media (max-width: 920px){
+      #story{width:420px; min-width:320px}
+    }
+    @media (max-width: 760px){
+      .layout{flex-direction:column}
+      #story{
+        width:100%;
+        max-width:none;
+        min-width:0;
+        height:46%;
+        border-right:none;
+        border-bottom:1px solid var(--line);
+      }
+      #map{height:54%}
+      #mapLegendOverlay{right:10px; width:260px}
+    }
   </style>
 </head>
 
 <body>
-<div class="container">
-  <div id="story">
-    <h1>Traffic Analysis StoryMap</h1>
-    <p class="sub">Scroll to switch the intersection metric. Media points stay available as field evidence.</p>
+  <!-- Top Nav -->
+  <div class="topnav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">Traffic Analysis StoryMap</a>
 
-    <div class="control">
-      <div><b>Color Palette</b></div>
-      <select id="palette">
-        <option value="blue">Blue (sequential)</option>
-        <option value="red">Red (sequential)</option>
-        <option value="green">Green (sequential)</option>
-        <option value="purple">Purple (sequential)</option>
-        <option value="gray">Gray (sequential)</option>
-      </select>
-      <div id="legend" class="legend"></div>
-      <div id="legendLabel" class="legendLabel">—</div>
-    </div>
+      <div class="nav-links">
+        <a href="#controls">Controls</a>
 
-    <div class="control">
-      <div><b>Intersection Size</b></div>
-      <input type="range" min="3" max="26" value="8" id="sizeIntersection"/>
-    </div>
+        <div class="dropdown" tabindex="0">
+          <button type="button">Jump ▾</button>
+          <div class="menu">
+            <a href="#chapters">Metrics</a>
+            <a href="#data">Data & Notes</a>
+            <a href="#top">Top</a>
+          </div>
+        </div>
 
-    <div class="control">
-      <div class="row">
-        <label><input type="checkbox" id="toggleMedia" checked> Show Media Points</label>
-      </div>
-      <div style="margin-top:10px"><b>Media Size</b></div>
-      <input type="range" min="2" max="24" value="7" id="sizeMedia"/>
-    </div>
-
-    <div class="control">
-      <div><b>Layer Order</b></div>
-      <div class="row" style="margin-top:8px">
-        <button type="button" id="btnFrontIntersections">Intersections Front</button>
-        <button type="button" id="btnFrontMedia">Media Front</button>
-      </div>
-    </div>
-
-    <div id="status" class="status">Loading…</div>
-
-    <section data-field="count_total"><h2>Overall Traffic Volume</h2><p>Total traffic intensity across intersections.</p></section>
-    <section data-field="count_motorbike"><h2>Motorbike Count</h2><p>Absolute motorbike flow distribution.</p></section>
-    <section data-field="count_car"><h2>Car Count</h2><p>Absolute car traffic distribution.</p></section>
-    <section data-field="count_bus"><h2>Bus Count</h2><p>Bus traffic concentration across nodes.</p></section>
-    <section data-field="count_truck"><h2>Truck Count</h2><p>Freight movement pattern in the network.</p></section>
-
-    <section data-field="share_mc" data-type="share"><h2>Motorbike Share</h2><p>Proportion of motorbike traffic relative to total traffic.</p></section>
-    <section data-field="share_car" data-type="share"><h2>Car Share</h2><p>Proportion of car traffic relative to total traffic.</p></section>
-    <section data-field="share_bus" data-type="share"><h2>Bus Share</h2><p>Proportion of bus traffic relative to total traffic.</p></section>
-    <section data-field="share_truck" data-type="share"><h2>Truck Share</h2><p>Proportion of truck traffic relative to total traffic.</p></section>
-  </div>
-
-  <div id="map">
-    <div id="mapTitleOverlay" class="map-overlay">
-      <div id="mapTitle" class="mapTitle">—</div>
-      <p id="mapSubtitle" class="mapSubtitle">—</p>
-    </div>
-
-    <div id="mapLegendOverlay" class="map-overlay">
-      <div id="mapLegendTitle" class="mapLegendTitle">Legend</div>
-      <div id="mapLegendBar"></div>
-      <div id="mapLegendLabel">—</div>
-      <div class="typeLegend" aria-label="Media type legend">
-        <span><span class="swatch" style="background:#2563eb"></span>Photo</span>
-        <span><span class="swatch" style="background:#dc2626"></span>Video</span>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="conclusion.html" class="nav-cta">Conclusion</a>
       </div>
     </div>
   </div>
-</div>
+
+  <div class="layout">
+    <!-- Story panel -->
+    <aside id="story">
+      <div class="story-hero" id="top">
+        <h1>Traffic Analysis StoryMap</h1>
+        <p>
+          Scroll (or click a chapter card) to switch intersection metrics. Media points remain available as field evidence.
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#chapters">Start the story</a>
+          <a class="btn" href="#controls">Tune layers</a>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="panel" id="controls">
+        <h3>Map Controls</h3>
+
+        <div style="margin-top:10px"><b>Color Palette</b></div>
+        <select id="palette">
+          <option value="blue">Blue (sequential)</option>
+          <option value="red">Red (sequential)</option>
+          <option value="green">Green (sequential)</option>
+          <option value="purple">Purple (sequential)</option>
+          <option value="gray">Gray (sequential)</option>
+        </select>
+        <div id="legend" class="legend"></div>
+        <div id="legendLabel" class="legendLabel">—</div>
+
+        <div style="margin-top:14px"><b>Intersection Size</b></div>
+        <input type="range" min="3" max="26" value="8" id="sizeIntersection"/>
+
+        <div style="margin-top:14px" class="row">
+          <label><input type="checkbox" id="toggleMedia" checked> Show Media Points</label>
+        </div>
+
+        <div style="margin-top:10px"><b>Media Size</b></div>
+        <input type="range" min="2" max="24" value="7" id="sizeMedia"/>
+
+        <div style="margin-top:14px"><b>Layer Order</b></div>
+        <div class="row" style="margin-top:8px">
+          <button type="button" id="btnFrontIntersections" title="Bring intersection layer to the front">Intersections Front</button>
+          <button type="button" id="btnFrontMedia" title="Bring media layer to the front">Media Front</button>
+        </div>
+
+        <div id="status" class="status">Loading…</div>
+      </div>
+
+      <!-- Chapters -->
+      <div class="chapters" id="chapters">
+        <div class="chapters-group-title">Counts</div>
+        <section tabindex="0" role="button" aria-label="Overall Traffic Volume" data-field="count_total"><h2>Overall Traffic Volume</h2><p>Total traffic intensity across intersections.</p></section>
+        <section tabindex="0" role="button" aria-label="Motorbike Count" data-field="count_motorbike"><h2>Motorbike Count</h2><p>Absolute motorbike flow distribution.</p></section>
+        <section tabindex="0" role="button" aria-label="Car Count" data-field="count_car"><h2>Car Count</h2><p>Absolute car traffic distribution.</p></section>
+        <section tabindex="0" role="button" aria-label="Bus Count" data-field="count_bus"><h2>Bus Count</h2><p>Bus traffic concentration across nodes.</p></section>
+        <section tabindex="0" role="button" aria-label="Truck Count" data-field="count_truck"><h2>Truck Count</h2><p>Freight movement pattern in the network.</p></section>
+
+        <div class="chapters-group-title">Shares</div>
+        <section tabindex="0" role="button" aria-label="Motorbike Share" data-field="share_mc" data-type="share"><h2>Motorbike Share</h2><p>Proportion of motorbike traffic relative to total traffic.</p></section>
+        <section tabindex="0" role="button" aria-label="Car Share" data-field="share_car" data-type="share"><h2>Car Share</h2><p>Proportion of car traffic relative to total traffic.</p></section>
+        <section tabindex="0" role="button" aria-label="Bus Share" data-field="share_bus" data-type="share"><h2>Bus Share</h2><p>Proportion of bus traffic relative to total traffic.</p></section>
+        <section tabindex="0" role="button" aria-label="Truck Share" data-field="share_truck" data-type="share"><h2>Truck Share</h2><p>Proportion of truck traffic relative to total traffic.</p></section>
+      </div>
+
+      <!-- Data note -->
+      <div class="panel" id="data" style="margin-top:18px">
+        <h3>Data & Notes</h3>
+        <p style="color:var(--muted); font-size:13px; line-height:1.55">
+          Intersections are aggregated observation points. Media points are field photos/videos linked by URL.
+          Use the legend (top-right) to interpret the active metric. Click a point to inspect attributes and open media.
+        </p>
+      </div>
+    </aside>
+
+    <!-- Map -->
+    <main id="map">
+      <div id="mapCanvas" aria-label="Map"></div>
+
+      <div id="mapTitleOverlay" class="map-overlay">
+        <div id="mapTitle" class="mapTitle">—</div>
+        <p id="mapSubtitle" class="mapSubtitle">—</p>
+      </div>
+
+      <div id="mapLegendOverlay" class="map-overlay">
+        <div id="mapLegendTitle" class="mapLegendTitle">Legend</div>
+        <div id="mapLegendBar"></div>
+        <div id="mapLegendLabel">—</div>
+        <div class="typeLegend" aria-label="Media type legend">
+          <span><span class="swatch" style="background:#2563eb"></span>Photo</span>
+          <span><span class="swatch" style="background:#dc2626"></span>Video</span>
+        </div>
+      </div>
+    </main>
+  </div>
 
 <script>
   // =========================
@@ -149,7 +442,7 @@
   // MAP INIT
   // =========================
   const map = new mapboxgl.Map({
-    container: "map",
+    container: "mapCanvas",
     style: "mapbox://styles/mapbox/light-v11",
     center: [106.6868, 10.7815],
     zoom: 13
@@ -218,7 +511,6 @@
   }
 
   function inferMediaType(props) {
-    // Prefer explicit MediaType if present
     const mt = String(props.MediaType || props.media_type || props.type || "").toLowerCase().trim();
     if (mt.includes("video")) return "video";
     if (mt.includes("photo") || mt.includes("image") || mt.includes("pic")) return "photo";
@@ -227,7 +519,6 @@
     if (/\.(mp4|mov|webm)$/i.test(url)) return "video";
     if (/\.(jpg|jpeg|png|gif|webp|heic)$/i.test(url)) return "photo";
 
-    // Fallback: if it is not a recognized video, treat as photo
     return "photo";
   }
 
@@ -252,7 +543,6 @@
         if (n !== null) props[k] = n;
       }
 
-      // Add derived media type field for styling
       if (kind === "media") {
         props.__mediaType = inferMediaType(props);
       }
@@ -279,11 +569,9 @@
       ? `${(min*100).toFixed(0)}% → ${(max*100).toFixed(0)}%`
       : `${min.toFixed(0)} → ${max.toFixed(0)}`;
 
-    // Story panel legend
     document.getElementById("legend").style.background = `linear-gradient(to right, ${colors.join(",")})`;
     document.getElementById("legendLabel").textContent = label;
 
-    // Map legend overlay
     document.getElementById("mapLegendTitle").textContent = fieldLabel || "Legend";
     document.getElementById("mapLegendBar").style.background = `linear-gradient(to right, ${colors.join(",")})`;
     document.getElementById("mapLegendLabel").textContent = label;
@@ -304,6 +592,16 @@
         error: err => reject(err)
       });
     });
+  }
+
+  // ===== Small optimization: responsive padding for fitBounds / easeTo =====
+  function getPanelMode() {
+    return window.matchMedia("(max-width: 760px)").matches ? "stacked" : "side";
+  }
+  function mapPaddingFor(mode) {
+    // side: story at left; stacked: story on top
+    if (mode === "stacked") return { left: 40, top: 240, right: 40, bottom: 60 };
+    return { left: 380, top: 70, right: 70, bottom: 70 };
   }
 
   // =========================
@@ -377,7 +675,6 @@
       return;
     }
 
-    // Auto-detect coordinate keys
     const iKeys = findCoordKeys(intersectionRows, "lon", "lat");
     const mKeys = findCoordKeys(mediaRows, "Longitude", "Latitude");
 
@@ -393,7 +690,7 @@
     );
 
     const addLayers = () => {
-      // Fit bounds to points
+      // Fit bounds to points (responsive padding)
       const allCoords = [
         ...intersectionGeo.features.map(f => f.geometry.coordinates),
         ...mediaGeo.features.map(f => f.geometry.coordinates)
@@ -404,7 +701,7 @@
           (b, c) => b.extend(c),
           new mapboxgl.LngLatBounds(allCoords[0], allCoords[0])
         );
-        map.fitBounds(bounds, { padding: { left: 360, top: 60, right: 60, bottom: 60 }, duration: 800 });
+        map.fitBounds(bounds, { padding: mapPaddingFor(getPanelMode()), duration: 800 });
       }
 
       map.addSource("intersections", { type: "geojson", data: intersectionGeo });
@@ -424,7 +721,7 @@
         }
       });
 
-      // Media halo for videos (optional but nice)
+      // Media halo for videos
       map.addLayer({
         id: "media-video-halo",
         type: "circle",
@@ -437,7 +734,7 @@
         }
       });
 
-      // Media points with type-based color
+      // Media points
       map.addLayer({
         id: "media-layer",
         type: "circle",
@@ -457,7 +754,7 @@
         }
       });
 
-      // Controls
+      // ===== Controls =====
       document.getElementById("palette").addEventListener("change", () => {
         const active = document.querySelector("section.active") || document.querySelector("section[data-field]");
         if (active) applyIntersectionStyle(active.dataset.field, active);
@@ -481,12 +778,11 @@
 
       document.getElementById("btnFrontIntersections").addEventListener("click", () => bringFront("intersection-layer"));
       document.getElementById("btnFrontMedia").addEventListener("click", () => {
-        // Ensure halo stays below the media points
         bringFront("media-video-halo");
         bringFront("media-layer");
       });
 
-      // Click: intersection popup
+      // ===== Popups =====
       map.on("click", "intersection-layer", (e) => {
         const f = e.features && e.features[0];
         if (!f) return;
@@ -515,7 +811,6 @@
           .addTo(map);
       });
 
-      // Click: media popup + auto zoom + big media
       map.on("click", "media-layer", (e) => {
         const f = e.features && e.features[0];
         if (!f) return;
@@ -529,7 +824,7 @@
         map.easeTo({
           center: f.geometry.coordinates,
           zoom: targetZoom,
-          padding: { left: 360, top: 70, right: 70, bottom: 70 },
+          padding: mapPaddingFor(getPanelMode()),
           duration: 800,
           essential: true
         });
@@ -562,53 +857,66 @@
         map.on("mouseleave", layerId, () => map.getCanvas().style.cursor = "");
       }
 
-      // Scroll + Click navigation for story sections
-const sections = document.querySelectorAll("section[data-field]");
-const storyEl = document.getElementById("story");
+      // ===== Scroll + Click navigation for story sections (small optimizations) =====
+      const sections = document.querySelectorAll("section[data-field]");
+      const storyEl = document.getElementById("story");
+      let manualJumpUntil = 0;
 
-// Lock to prevent IntersectionObserver from fighting with click-to-jump smooth scrolling
-let manualJumpUntil = 0;
+      const observer = new IntersectionObserver((entries) => {
+        if (Date.now() < manualJumpUntil) return;
 
-const observer = new IntersectionObserver((entries) => {
-  // If we just did a manual jump, ignore observer briefly
-  if (Date.now() < manualJumpUntil) return;
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
 
-  for (const entry of entries) {
-    if (!entry.isIntersecting) continue;
+          sections.forEach(s => s.classList.remove("active"));
+          entry.target.classList.add("active");
+          applyIntersectionStyle(entry.target.dataset.field, entry.target);
 
-    sections.forEach(s => s.classList.remove("active"));
-    entry.target.classList.add("active");
-    applyIntersectionStyle(entry.target.dataset.field, entry.target);
-  }
-}, { threshold: 0.6 });
+          // Small optimization: ensure active card stays visible without fighting scroll
+          entry.target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }, { threshold: 0.6 });
 
-sections.forEach(s => observer.observe(s));
+      sections.forEach(s => observer.observe(s));
 
-// Click-to-jump: click a section to scroll to it AND immediately apply the metric
-sections.forEach((sec) => {
-  sec.style.cursor = "pointer";
+      function activateSection(sec, doScroll=true) {
+        sections.forEach(s => s.classList.remove("active"));
+        sec.classList.add("active");
+        applyIntersectionStyle(sec.dataset.field, sec);
 
-  sec.addEventListener("click", (ev) => {
-    ev.preventDefault();
+        if (doScroll) {
+          manualJumpUntil = Date.now() + 650;
+          const top = sec.offsetTop - 10;
+          storyEl.scrollTo({ top, behavior: "smooth" });
+        }
+      }
 
-    // Activate immediately
-    sections.forEach(s => s.classList.remove("active"));
-    sec.classList.add("active");
-    applyIntersectionStyle(sec.dataset.field, sec);
+      // Click-to-jump + keyboard Enter/Space
+      sections.forEach((sec) => {
+        sec.style.cursor = "pointer";
 
-    // Smooth scroll inside the story panel
-    manualJumpUntil = Date.now() + 600; // 0.6s lock
-    const top = sec.offsetTop - 12;
-    storyEl.scrollTo({ top, behavior: "smooth" });
-  });
-});
+        sec.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          activateSection(sec, true);
+        });
 
-// Initialize
-const first = document.querySelector("section[data-field]");
-if (first) {
-  first.classList.add("active");
-  applyIntersectionStyle(first.dataset.field, first);
-}
+        sec.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            activateSection(sec, true);
+          }
+        });
+      });
+
+      // Initialize first
+      const first = document.querySelector("section[data-field]");
+      if (first) activateSection(first, false);
+
+      // Small optimization: refit padding if viewport mode changes
+      window.addEventListener("resize", () => {
+        // Update only the map padding behavior for future easeTo/fitBounds; optional immediate resize safe-guard:
+        map.resize();
+      });
     };
 
     if (map.loaded()) addLayers();
